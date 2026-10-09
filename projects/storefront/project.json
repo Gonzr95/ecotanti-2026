@@ -1,0 +1,76 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "storefront",
+  "projectType": "application",
+  "generators": {},
+  "sourceRoot": "projects/storefront/src",
+  "prefix": "app",
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "options": {
+        "browser": "projects/storefront/src/main.ts",
+        "tsConfig": "projects/storefront/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/storefront/public"
+          }
+        ],
+        "styles": [
+          "projects/storefront/src/styles.css"
+        ],
+        "server": "projects/storefront/src/main.server.ts",
+        "outputMode": "server",
+        "security": {
+          "allowedHosts": []
+        },
+        "ssr": {
+          "entry": "projects/storefront/src/server.ts"
+        },
+        "outputPath": "dist/storefront"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kB",
+              "maximumError": "8kB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production",
+      "outputs": [
+        "{options.outputPath}"
+      ]
+    },
+    "serve": {
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "storefront:build:production"
+        },
+        "development": {
+          "buildTarget": "storefront:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "test": {
+      "executor": "@angular/build:unit-test"
+    }
+  }
+}

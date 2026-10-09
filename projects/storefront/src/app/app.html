@@ -1,0 +1,40 @@
+<main class="min-h-screen bg-slate-50 text-slate-800 p-8">
+  <div class="max-w-4xl mx-auto space-y-8">
+    <header class="flex items-center justify-between border-b border-slate-200 pb-4">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight text-emerald-700 flex items-center gap-2">
+          <i class="pi pi-shop text-2xl"></i> EcoTanti Storefront
+        </h1>
+        <p class="text-slate-500 text-sm">Tienda pública (Angular SSR + Optimus UI + Tailwind)</p>
+      </div>
+      <p-tag value="En línea" severity="success" icon="pi pi-check" />
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <p-card>
+        <ng-template #title>
+          <div class="flex justify-between items-center">
+            <span class="text-xl font-bold">Yerba Mate Orgánica 500g</span>
+            <p-tag value="Oferta" severity="warn" />
+          </div>
+        </ng-template>
+        <ng-template #subtitle>
+          <span class="text-emerald-600 font-semibold text-lg">$4.500 ARS</span>
+        </ng-template>
+        
+        <p class="text-slate-600 text-sm my-3">
+          Yerba mate agroecológica secada a barbacuá. Cosecha seleccionada de pequeños productores.
+        </p>
+
+        <ng-template #footer>
+          <div class="flex gap-3">
+            <p-button label="Agregar al Carrito" icon="pi pi-shopping-cart" class="w-full" styleClass="w-full" />
+            <p-button icon="pi pi-heart" severity="secondary" [outlined]="true" />
+          </div>
+        </ng-template>
+      </p-card>
+    </section>
+
+    <router-outlet />
+  </div>
+</main>

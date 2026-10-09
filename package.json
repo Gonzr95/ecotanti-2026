@@ -3,10 +3,16 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "dev": "nx run-many -t serve",
+    "start": "nx serve storefront",
+    "start:storefront": "nx serve storefront --port 4200",
+    "start:backoffice": "nx serve backoffice --port 4201",
+    "build": "nx build",
+    "build:storefront": "nx build storefront",
+    "build:backoffice": "nx build backoffice",
+    "watch": "nx build --watch --configuration development",
+    "test": "nx test",
+    "serve:ssr:storefront": "node dist/storefront/server/server.mjs"
   },
   "private": true,
   "packageManager": "npm@12.0.2",
@@ -16,14 +22,36 @@
     "@angular/core": "^22.1.0",
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
+    "@angular/platform-server": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@angular/ssr": "^22.2.2",
+    "@openng/icons": "^1.0.0",
+    "@openng/optimus-ui": "^2.0.2",
+    "@openng/optimus-ui-tailwindcss": "^2.0.2",
+    "@openng/optimus-ui-themes": "^2.0.2",
+    "express": "^5.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@angular-devkit/core": "^22.1.4",
+    "@angular-devkit/schematics": "^22.1.4",
+    "@angular/build": "^22.2.2",
     "@angular/cli": "^22.1.4",
     "@angular/compiler-cli": "^22.1.0",
+    "@nx/angular": "23.3.0",
+    "@nx/workspace": "23.3.0",
+    "@schematics/angular": "^22.1.4",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.12.0",
+    "autoprefixer": "^10.6.1",
+    "jsdom": "^30.0.0",
+    "nx": "23.3.0",
+    "postcss": "^8.5.29",
     "prettier": "^3.8.1",
-    "typescript": "~6.0.2"
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0"
   }
 }
