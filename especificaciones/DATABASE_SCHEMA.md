@@ -73,3 +73,12 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `username` | `text` |  Nullable |
 | `metadata` | `jsonb` |  Nullable |
 
+
+
+## Storage `media`
+
+Bucket para almacenamiento de archivos multimedia.
+
+### Carpetas:
+* `users/`: Avatares y fotos de perfil de usuarios (enlace con `profiles.avatar_url`).
+* `products/`: Fotografías e imágenes del catálogo de productos.

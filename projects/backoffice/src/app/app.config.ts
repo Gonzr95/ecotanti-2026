@@ -4,6 +4,8 @@ import { routes } from './app.routes';
 
 import { provideOptimus } from '@openng/optimus-ui/config';
 import Aura from '@openng/optimus-ui-themes/aura';
+import { provideSupabase } from '@ecotanti/shared-auth';
+import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,5 +15,6 @@ export const appConfig: ApplicationConfig = {
       theme: { preset: Aura },
       ripple: true,
     }),
+    provideSupabase(environment),
   ],
 };
