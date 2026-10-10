@@ -27,6 +27,8 @@ EcoTanti es un e-commerce desarrollado con arquitectura de Monorepo (Nx), compue
 - **Mercado Pago (Fase 2):** En el MVP no se procesan cobros automáticos. El checkout se gestiona por Transferencia Bancaria (CBU/Alias) y WhatsApp. Mercado Pago queda visible como "(Próximamente)".
 - **Logística y Facturación AFIP:** La base de datos deja los campos desacoplados y preparados para futuras integraciones.
 - **Offline-First en Backoffice:** Los productos creados sin conexión usan UUIDs generados en el cliente y se encolan en IndexedDB (Outbox Pattern) para sincronizarse automáticamente al detectar red.
+- **Lazy Loading Mandatorio en Backoffice:** Todos los componentes y pantallas desarrollados para el Backoffice deben cargarse con lazy loading (`loadComponent: () => import(...)` en rutas y `@defer` para subcomponentes diferidos/modales).
+- **Feedback Visual con Skeleton & Spinners:** Toda vista que consulte datos asíncronos o ejecute mutaciones debe implementar estados de carga visual: `<p-skeleton>` para listados/tablas/cards (evitando layout shifts) y botones con `[loading]` / spinners para acciones de guardado y transiciones (ver [`.gemini/optimus_ui_guidelines.md`](./optimus_ui_guidelines.md)).
 - **Despliegue inicial:** Backoffice en Firebase Hosting ($0). Storefront en Firebase App Hosting / Vercel o Home Server vía Cloudflare Tunnel.
 
 Para detalles exhaustivos de arquitectura general y marco legal argentino, referirse a `ARCHITECTURE.md`.

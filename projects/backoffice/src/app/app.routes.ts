@@ -32,6 +32,14 @@ export const routes: Routes = [
           import('./features/catalog/brands/brands').then((m) => m.BrandsComponent),
       },
       {
+        path: 'productos',
+        title: 'Productos - EcoTanti Backoffice',
+        canActivate: [permissionGuard],
+        data: { permission: 'catalog.products.view' },
+        loadComponent: () =>
+          import('./features/catalog/products/products').then((m) => m.ProductsComponent),
+      },
+      {
         path: '**',
         redirectTo: 'home',
       },

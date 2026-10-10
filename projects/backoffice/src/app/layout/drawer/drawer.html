@@ -100,15 +100,17 @@
                   <span>Marcas</span>
                 </a>
               }
-              <a
-                routerLink="/productos"
-                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
-                (click)="close()"
-                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
-              >
-                <i class="pi pi-box text-xs"></i>
-                <span>Productos</span>
-              </a>
+              @if (hasPermission('catalog.products.view')) {
+                <a
+                  routerLink="/productos"
+                  routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                  (click)="close()"
+                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+                >
+                  <i class="pi pi-box text-xs"></i>
+                  <span>Productos</span>
+                </a>
+              }
               <a
                 routerLink="/ofertas"
                 routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"

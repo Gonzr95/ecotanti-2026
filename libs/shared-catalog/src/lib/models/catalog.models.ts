@@ -8,6 +8,13 @@ export interface Category {
   is_active: boolean;
 }
 
+export interface CreateCategoryDto {
+  name: string;
+  slug: string;
+  description?: string | null;
+  is_active?: boolean;
+}
+
 export interface Brand {
   id: number;
   created_at: string;
@@ -16,6 +23,24 @@ export interface Brand {
   slug: string;
   logo_url: string | null;
   is_active: boolean;
+}
+
+export interface BrandWithProductCount extends Brand {
+  product_count: number;
+}
+
+export interface CreateBrandDto {
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  is_active?: boolean;
+}
+
+export interface UpdateBrandDto {
+  name?: string;
+  slug?: string;
+  logo_url?: string | null;
+  is_active?: boolean;
 }
 
 export interface Product {
@@ -35,6 +60,38 @@ export interface Product {
   is_active: boolean;
   is_highlight: boolean;
   is_on_sale: boolean;
+}
+
+export interface CreateProductDto {
+  name: string;
+  slug: string;
+  description?: string | null;
+  base_price: number;
+  sale_price?: number | null;
+  cost_price: number;
+  stock: number;
+  category_id: number;
+  brand_id: number;
+  images: string[];
+  is_active?: boolean;
+  is_highlight?: boolean;
+  is_on_sale?: boolean;
+}
+
+export interface UpdateProductDto {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  base_price?: number;
+  sale_price?: number | null;
+  cost_price?: number;
+  stock?: number;
+  category_id?: number;
+  brand_id?: number;
+  images?: string[];
+  is_active?: boolean;
+  is_highlight?: boolean;
+  is_on_sale?: boolean;
 }
 
 export interface Bundle {
