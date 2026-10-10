@@ -1,0 +1,14 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "skipLibCheck": true,
+    "paths": {
+      "@ecotanti/shared-auth": ["./libs/shared-auth/src/index.ts"],
+      "@ecotanti/shared-catalog": ["./libs/shared-catalog/src/index.ts"]
+    }
+  }
+}

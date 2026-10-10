@@ -2,3 +2,14 @@
 @import "@openng/icons/openng-icons.css";
 @import "tailwindcss";
 @import "@openng/optimus-ui-tailwindcss";
+
+/* Corrección de animaciones de Optimus UI (Glitch en modales, diálogos y drawers al desmontarse) */
+.p-drawer-leave-left,
+.p-drawer-leave-right,
+.p-drawer-leave-top,
+.p-drawer-leave-bottom,
+.p-drawer-leave-full,
+.p-dialog-leave-active,
+.p-overlay-mask-leave-active {
+  animation-fill-mode: forwards !important;
+}

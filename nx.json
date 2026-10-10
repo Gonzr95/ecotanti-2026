@@ -16,5 +16,13 @@
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": ["default"]
   },
-  "analytics": false
+  "analytics": false,
+  "generators": {
+    "@nx/angular:library": {
+      "unitTestRunner": "none"
+    },
+    "@nx/angular:component": {
+      "style": "css"
+    }
+  }
 }

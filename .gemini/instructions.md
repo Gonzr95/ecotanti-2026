@@ -20,7 +20,10 @@ EcoTanti es un e-commerce desarrollado con arquitectura de Monorepo (Nx), compue
 - Al implementar componentes en el Backoffice, consultar siempre estos endpoints y respetar [`.gemini/optimus_ui_guidelines.md`](./optimus_ui_guidelines.md).
 
 ## Decisiones Técnicas Críticas
-- **Base de Datos:** Estructura oficial documentada en `especificaciones/DATABASE_SCHEMA.md`.
+- **Base de Datos y RLS Obligatorio:** Toda tabla creada o modificada en Supabase debe contar con sus políticas de Row Level Security (RLS) explícitas:
+  1. `SELECT`: Definir permisos de lectura para usuarios anónimos o autenticados (e.g. `auth.uid() = user_id`). Recordar que sin política de SELECT, PostgreSQL devuelve 0 filas (`[]`) silenciosamente.
+  2. `INSERT`: Autorizar explícitamente inserciones desde el cliente (e.g. `security_logs`, pedidos, carritos).
+  3. `UPDATE / DELETE`: Restringir por propiedad del registro o por roles validados en `user_roles`.
 - **Mercado Pago (Fase 2):** En el MVP no se procesan cobros automáticos. El checkout se gestiona por Transferencia Bancaria (CBU/Alias) y WhatsApp. Mercado Pago queda visible como "(Próximamente)".
 - **Logística y Facturación AFIP:** La base de datos deja los campos desacoplados y preparados para futuras integraciones.
 - **Offline-First en Backoffice:** Los productos creados sin conexión usan UUIDs generados en el cliente y se encolan en IndexedDB (Outbox Pattern) para sincronizarse automáticamente al detectar red.
