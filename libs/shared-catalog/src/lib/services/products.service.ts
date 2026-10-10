@@ -63,30 +63,36 @@ export class ProductsService {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = `products/${fileName}`;
 
-    // Intentar subir al bucket products
-    const bucket = this.supabase.storage.from('products');
-    const { data, error } = await bucket.upload(filePath, file, {
+    // 1. Usar el bucket configurado en environment (por defecto 'media')
+    const primaryBucketName = this.supabase.storageConfig?.bucket || 'media';
+    const primaryBucket = this.supabase.storage.from(primaryBucketName);
+    const { error: primaryError } = await primaryBucket.upload(filePath, file, {
       cacheControl: '3600',
       upsert: false,
     });
 
-    if (error) {
-      // Fallback a media bucket si el bucket products no existe
-      const fallbackBucket = this.supabase.storage.from('media');
-      const fallbackResult = await fallbackBucket.upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-      if (fallbackResult.error) {
-        throw fallbackResult.error;
-      }
-      const { data: publicData } = fallbackBucket.getPublicUrl(filePath);
+    if (!primaryError) {
+      const { data: publicData } = primaryBucket.getPublicUrl(filePath);
       return publicData.publicUrl;
     }
 
-    const { data: publicData } = bucket.getPublicUrl(filePath);
-    return publicData.publicUrl;
+    // 2. Fallback a bucket alternativo ('products' si el primario era 'media' o viceversa)
+    const fallbackBucketName = primaryBucketName === 'media' ? 'products' : 'media';
+    const fallbackBucket = this.supabase.storage.from(fallbackBucketName);
+    const { error: fallbackError } = await fallbackBucket.upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+    if (fallbackError) {
+      throw new Error(
+        `Error al subir imagen: ni el bucket '${primaryBucketName}' ni '${fallbackBucketName}' están disponibles. ` +
+        `Asegúrate de haber creado el bucket público en Supabase Storage.`
+      );
+    }
+
+    const { data: fallbackData } = fallbackBucket.getPublicUrl(filePath);
+    return fallbackData.publicUrl;
   }
 }
 

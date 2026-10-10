@@ -165,27 +165,44 @@ describe('ProductCreateWizardComponent', () => {
     expect(component.canAdvanceStep(3)).toBe(true);
   });
 
-  it('should manage image list and cover designation in Step 4', () => {
+  it('should manage image list, enforce 1-3 photos limit, and manage cover in Step 4', () => {
     component.currentStep.set(4);
 
-    // Paso 4 permite avanzar aún sin imágenes (opcional)
-    expect(component.canAdvanceStep(4)).toBe(true);
+    // Paso 4 requiere al menos 1 imagen
+    expect(component.canAdvanceStep(4)).toBe(false);
 
+    // Agregar 1ra imagen (suficiente para avanzar)
     component.imageUrlInput.set('https://example.com/img1.jpg');
     component.addImageUrl();
+    expect(component.images().length).toBe(1);
+    expect(component.canAdvanceStep(4)).toBe(true);
+
+    // Agregar 2da y 3ra imagen
     component.imageUrlInput.set('https://example.com/img2.jpg');
     component.addImageUrl();
+    component.imageUrlInput.set('https://example.com/img3.jpg');
+    component.addImageUrl();
+    expect(component.images().length).toBe(3);
+    expect(component.canAdvanceStep(4)).toBe(true);
 
-    expect(component.images().length).toBe(2);
-    expect(component.images()[0]).toBe('https://example.com/img1.jpg');
+    // Intentar agregar una 4ta imagen (debe ignorarse por límite de 3)
+    component.imageUrlInput.set('https://example.com/img4.jpg');
+    component.addImageUrl();
+    expect(component.images().length).toBe(3);
 
     // Cambiar portada
     component.setCoverImage(1);
     expect(component.images()[0]).toBe('https://example.com/img2.jpg');
 
-    // Eliminar imagen
+    // Eliminar imágenes
     component.removeImage(0);
-    expect(component.images().length).toBe(1);
+    expect(component.images().length).toBe(2);
+    expect(component.canAdvanceStep(4)).toBe(true);
+
+    component.removeImage(0);
+    component.removeImage(0);
+    expect(component.images().length).toBe(0);
+    expect(component.canAdvanceStep(4)).toBe(false);
   });
 
   it('should allow going backwards to previous steps at any time', () => {

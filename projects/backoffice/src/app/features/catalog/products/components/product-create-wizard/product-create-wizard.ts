@@ -73,6 +73,7 @@ export class ProductCreateWizardComponent implements OnInit {
   // Estados del Wizard
   readonly currentStep = signal<number>(1);
   readonly totalSteps = 5;
+  readonly MAX_IMAGES = 3;
   readonly isSaving = signal<boolean>(false);
   readonly isUploadingImage = signal<boolean>(false);
   readonly isCreatingCategory = signal<boolean>(false);
@@ -229,7 +230,10 @@ export class ProductCreateWizardComponent implements OnInit {
         (this.productForm.controls.stock.valid ?? false)
       );
     }
-    // Paso 4 e imágenes son opcionales para avanzar
+    if (step === 4) {
+      // Al menos 1 foto requerida para portada, máximo 3
+      return this.images().length >= 1 && this.images().length <= this.MAX_IMAGES;
+    }
     return true;
   }
 
@@ -237,11 +241,19 @@ export class ProductCreateWizardComponent implements OnInit {
     const step = this.currentStep();
     if (!this.canAdvanceStep(step)) {
       this.markStepControlsAsTouched(step);
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Campos requeridos',
-        detail: 'Por favor completa los campos obligatorios antes de avanzar.',
-      });
+      if (step === 4 && this.images().length === 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Foto requerida',
+          detail: 'Debes cargar al menos 1 foto para el producto (con 1 es suficiente, hasta 3 fotos).',
+        });
+      } else {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Campos requeridos',
+          detail: 'Por favor completa los campos obligatorios antes de avanzar.',
+        });
+      }
       return;
     }
 
@@ -288,6 +300,15 @@ export class ProductCreateWizardComponent implements OnInit {
 
   // Manejo de Imágenes (Paso 4)
   addImageUrl(): void {
+    if (this.images().length >= this.MAX_IMAGES) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Límite de imágenes',
+        detail: `Solo puedes subir hasta ${this.MAX_IMAGES} fotos por producto.`,
+      });
+      return;
+    }
+
     const url = this.imageUrlInput().trim();
     if (!url) return;
     this.images.update((prev) => [...prev, url]);
@@ -311,6 +332,16 @@ export class ProductCreateWizardComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
+    if (this.images().length >= this.MAX_IMAGES) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Límite de imágenes',
+        detail: `Solo puedes subir hasta ${this.MAX_IMAGES} fotos por producto.`,
+      });
+      input.value = '';
+      return;
+    }
+
     const file = input.files[0];
     this.isUploadingImage.set(true);
 
@@ -319,15 +350,15 @@ export class ProductCreateWizardComponent implements OnInit {
       this.images.update((prev) => [...prev, publicUrl]);
       this.messageService.add({
         severity: 'success',
-        summary: 'Imagen subida',
-        detail: 'La imagen fue cargada correctamente.',
+        summary: 'Foto subida',
+        detail: `Foto agregada (${this.images().length} de ${this.MAX_IMAGES}).`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al subir imagen:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'No se pudo subir la imagen. Puedes ingresar una URL directa.',
+        detail: error?.message || 'No se pudo subir la imagen. Puedes ingresar una URL directa.',
       });
     } finally {
       this.isUploadingImage.set(false);
