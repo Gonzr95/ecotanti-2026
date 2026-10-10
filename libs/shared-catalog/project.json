@@ -1,0 +1,10 @@
+{
+  "name": "shared-catalog",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared-catalog/src",
+  "prefix": "lib",
+  "tags": [],
+  "projectType": "library",
+  "// targets": "to see all targets run: nx show project shared-catalog --web",
+  "targets": {}
+}

@@ -7,7 +7,8 @@
     "module": "preserve",
     "skipLibCheck": true,
     "paths": {
-      "@ecotanti/shared-auth": ["./libs/shared-auth/src/index.ts"]
+      "@ecotanti/shared-auth": ["./libs/shared-auth/src/index.ts"],
+      "@ecotanti/shared-catalog": ["./libs/shared-catalog/src/index.ts"]
     }
   }
 }
