@@ -54,20 +54,20 @@ export class AuthService {
       // 2. Obtener permission_id asociados a esos roles en role_permissions
       let permIds: number[] = [];
 
-      // Probar con 'role_id'
+      // Consultar con 'rol_id' (nombre de columna real en la base de datos)
       const { data: rolePerms, error: permError } = await this.supabase
         .from('role_permissions')
         .select('permission_id')
-        .in('role_id', roleIds);
+        .in('rol_id', roleIds);
 
       if (!permError && rolePerms && rolePerms.length > 0) {
         permIds = rolePerms.map((rp: any) => rp.permission_id);
       } else {
-        // Fallback a 'rol_id'
+        // Fallback a 'role_id' por retrocompatibilidad
         const { data: fallbackRolePerms } = await this.supabase
           .from('role_permissions')
           .select('permission_id')
-          .in('rol_id', roleIds);
+          .in('role_id', roleIds);
 
         if (fallbackRolePerms && fallbackRolePerms.length > 0) {
           permIds = fallbackRolePerms.map((rp: any) => rp.permission_id);
