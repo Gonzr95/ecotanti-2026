@@ -1,4 +1,4 @@
-import { inject, Service } from '@angular/core';
+import { inject, Service, signal } from '@angular/core';
 import { User } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
@@ -6,11 +6,100 @@ export interface AuthResult {
   success: boolean;
   error?: string;
   user?: User;
+  permissions?: string[];
 }
 
 @Service()
 export class AuthService {
   private readonly supabase = inject(SupabaseService);
+
+  /**
+   * Permisos explícitos asignados al usuario en la sesión activa
+   */
+  readonly userPermissions = signal<string[]>([]);
+
+  /**
+   * Verifica si el usuario cuenta con un permiso específico
+   */
+  hasPermission(code: string): boolean {
+    return this.userPermissions().includes(code);
+  }
+
+  /**
+   * Verifica si el usuario cuenta con al menos uno de los permisos provistos
+   */
+  hasAnyPermission(codes: string[]): boolean {
+    const userPerms = this.userPermissions();
+    return codes.some((code) => userPerms.includes(code));
+  }
+
+  /**
+   * Carga los permisos explícitos del usuario desde la base de datos
+   */
+  async loadUserPermissions(userId: string): Promise<string[]> {
+    try {
+      // 1. Obtener roles del usuario
+      const { data: userRoles, error: rolesError } = await this.supabase
+        .from('user_roles')
+        .select('role_id')
+        .eq('user_id', userId);
+
+      if (rolesError || !userRoles || userRoles.length === 0) {
+        this.userPermissions.set([]);
+        return [];
+      }
+
+      const roleIds = userRoles.map((r) => r.role_id);
+
+      // 2. Obtener permission_id asociados a esos roles en role_permissions
+      let permIds: number[] = [];
+
+      // Probar con 'role_id'
+      const { data: rolePerms, error: permError } = await this.supabase
+        .from('role_permissions')
+        .select('permission_id')
+        .in('role_id', roleIds);
+
+      if (!permError && rolePerms && rolePerms.length > 0) {
+        permIds = rolePerms.map((rp: any) => rp.permission_id);
+      } else {
+        // Fallback a 'rol_id'
+        const { data: fallbackRolePerms } = await this.supabase
+          .from('role_permissions')
+          .select('permission_id')
+          .in('rol_id', roleIds);
+
+        if (fallbackRolePerms && fallbackRolePerms.length > 0) {
+          permIds = fallbackRolePerms.map((rp: any) => rp.permission_id);
+        }
+      }
+
+      if (permIds.length === 0) {
+        this.userPermissions.set([]);
+        return [];
+      }
+
+      // 3. Obtener los códigos de permissions
+      const { data: permissionsData, error: permCodesError } = await this.supabase
+        .from('permissions')
+        .select('code')
+        .in('id', permIds);
+
+      if (permCodesError || !permissionsData) {
+        console.error('Error al consultar permissions en Supabase:', permCodesError);
+        this.userPermissions.set([]);
+        return [];
+      }
+
+      const uniquePerms = Array.from(new Set(permissionsData.map((p) => p.code)));
+      this.userPermissions.set(uniquePerms);
+      return uniquePerms;
+    } catch (err) {
+      console.error('Error al cargar permisos del usuario:', err);
+      this.userPermissions.set([]);
+      return [];
+    }
+  }
 
   /**
    * Autenticación para personal administrativo del Backoffice.
@@ -72,10 +161,14 @@ export class AuthService {
         };
       }
 
-      // Usuario autenticado con roles de staff válidos
+      // Usuario autenticado con roles de staff válidos.
+      // Cargamos sus permisos explícitos asignados:
+      const permissions = await this.loadUserPermissions(authData.user.id);
+
       return {
         success: true,
         user: authData.user,
+        permissions,
       };
     } catch (err) {
       console.error('Error inesperado durante el login:', err);
@@ -87,9 +180,10 @@ export class AuthService {
   }
 
   /**
-   * Cierra la sesión activa en Supabase
+   * Cierra la sesión activa en Supabase y limpia el estado reactivo de permisos
    */
   async logout(): Promise<void> {
+    this.userPermissions.set([]);
     await this.supabase.auth.signOut();
   }
 

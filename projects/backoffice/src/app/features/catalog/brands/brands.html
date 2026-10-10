@@ -1,0 +1,35 @@
+<div class="space-y-6">
+  <!-- Encabezado de la página -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+        <i class="pi pi-tag text-indigo-400 text-xl"></i>
+        <span>Marcas</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">
+        Administración y configuración de marcas asociadas a los productos
+      </p>
+    </div>
+    <div>
+      <p-button
+        label="Nueva Marca"
+        icon="pi pi-plus"
+        styleClass="!bg-indigo-600 hover:!bg-indigo-500 !text-white !font-medium !rounded-xl !border-none !shadow-md"
+      />
+    </div>
+  </div>
+
+  <!-- Estado inicial / Lista de marcas -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+      <i class="pi pi-box text-2xl"></i>
+    </div>
+    <div class="max-w-md mx-auto space-y-1">
+      <h3 class="text-lg font-semibold text-white">Módulo de Marcas Habilitado</h3>
+      <p class="text-sm text-slate-400">
+        Tienes acceso con el permiso explícito <code class="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 text-xs">catalog.brands.view</code>.
+      </p>
+    </div>
+  </div>
+</div>
+

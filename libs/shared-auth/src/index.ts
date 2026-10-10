@@ -3,3 +3,4 @@ export * from './lib/services/supabase.service';
 export * from './lib/services/auth.service';
 export * from './lib/providers/supabase.provider';
 export * from './lib/guards/staff.guard';
+export * from './lib/guards/permission.guard';

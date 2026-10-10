@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { staffGuard } from '@ecotanti/shared-auth';
+import { guestOnlyGuard, permissionGuard, staffGuard } from '@ecotanti/shared-auth';
 
 export const routes: Routes = [
   {
@@ -7,6 +7,7 @@ export const routes: Routes = [
     pathMatch: 'full',
     title: 'Acceso Administrativo - EcoTanti',
     data: { title: 'Iniciar Sesión' },
+    canActivate: [guestOnlyGuard],
     loadComponent: () =>
       import('./features/auth/login/login').then((m) => m.LoginComponent),
   },
@@ -22,6 +23,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/home/home').then((m) => m.HomeComponent),
       },
+      {
+        path: 'marcas',
+        title: 'Marcas - EcoTanti Backoffice',
+        canActivate: [permissionGuard],
+        data: { permission: 'catalog.brands.view' },
+        loadComponent: () =>
+          import('./features/catalog/brands/brands').then((m) => m.BrandsComponent),
+      },
+      {
+        path: '**',
+        redirectTo: 'home',
+      },
     ],
   },
   {
@@ -29,3 +42,4 @@ export const routes: Routes = [
     redirectTo: '',
   },
 ];
+

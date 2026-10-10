@@ -89,15 +89,17 @@
           </button>
           @if (openSections().catalogo) {
             <div class="pl-7 pr-2 py-1 space-y-1 border-l border-slate-800 ml-5 my-1">
-              <a
-                routerLink="/marcas"
-                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
-                (click)="close()"
-                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
-              >
-                <i class="pi pi-tag text-xs"></i>
-                <span>Marcas</span>
-              </a>
+              @if (hasPermission('catalog.brands.view')) {
+                <a
+                  routerLink="/marcas"
+                  routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                  (click)="close()"
+                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+                >
+                  <i class="pi pi-tag text-xs"></i>
+                  <span>Marcas</span>
+                </a>
+              }
               <a
                 routerLink="/productos"
                 routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
