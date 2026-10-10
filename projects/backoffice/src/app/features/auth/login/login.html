@@ -61,7 +61,7 @@
             pInputText
             formControlName="email"
             placeholder="admin@ecotanti.com"
-            class="w-full !bg-slate-950 !border-slate-800 !text-slate-100 placeholder:!text-slate-600 focus:!border-indigo-500"
+            class="w-full"
             [class.!border-red-500]="emailControl.touched && emailControl.invalid"
           />
         </p-iconfield>
@@ -93,7 +93,7 @@
           [feedback]="false"
           placeholder="••••••••"
           styleClass="w-full block"
-          inputStyleClass="w-full !bg-slate-950 !border-slate-800 !text-slate-100 placeholder:!text-slate-600 focus:!border-indigo-500"
+          inputStyleClass="w-full"
           [class.!border-red-500]="passwordControl.touched && passwordControl.invalid"
         />
         @if (passwordControl.touched && passwordControl.errors?.['required']) {
@@ -112,7 +112,7 @@
           [icon]="loading() ? '' : 'pi pi-sign-in'"
           [loading]="loading()"
           [disabled]="loginForm.invalid || loading() || isRedirecting()"
-          styleClass="w-full !py-3 !bg-indigo-600 hover:!bg-indigo-500 !border-none !text-white !font-medium !rounded-xl !shadow-lg !shadow-indigo-950 transition-all duration-200"
+          styleClass="w-full !py-3 shadow-lg shadow-indigo-950"
         />
       </div>
 

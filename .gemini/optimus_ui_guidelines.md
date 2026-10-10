@@ -3,7 +3,8 @@
 > **Librería de Componentes:** Optimus UI (`@openng/optimus-ui`), fork comunitario de PrimeNG.  
 > **Iconos:** `@openng/icons` (`pi pi-<nombre>`).  
 > **Estilos:** Tailwind CSS v4 + `@openng/optimus-ui-tailwindcss`.  
-> **Tema Activo:** Aura (`@openng/optimus-ui-themes/aura`).
+> **Tema Backoffice:** `BackofficeTheme` (`projects/backoffice/src/app/theme/backoffice.theme.ts`), preset que extiende `Aura` con paleta primaria `Indigo`, superficie oscura `Slate` y `rounded-xl`.
+> **Regla de Oro:** NO forzar colores en componentes nativos con clases `!important` (`!bg-indigo-600`, `!bg-slate-950`). Los botones e inputs toman sus estilos automáticamente del tema.
 
 ---
 
