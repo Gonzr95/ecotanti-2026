@@ -1,0 +1,204 @@
+<p-drawer
+  [(visible)]="visible"
+  [modal]="true"
+  [dismissible]="true"
+  [closeOnEscape]="true"
+  styleClass="!w-72 md:!w-80 !bg-slate-900 !border-r !border-slate-800 !p-0 !text-slate-100"
+>
+  <ng-template #headless>
+    <div class="flex flex-col h-full bg-slate-900 text-slate-100 select-none">
+      
+      <!-- Encabezado del Drawer (Estilo YouTube) -->
+      <div class="h-16 px-4 flex items-center justify-between border-b border-slate-800/80 shrink-0">
+        <div class="flex items-center gap-3">
+          <p-button
+            type="button"
+            icon="pi pi-bars"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            ariaLabel="Cerrar menú"
+            styleClass="!w-10 !h-10 !text-slate-300 hover:!bg-slate-800 hover:!text-white"
+            (click)="close()"
+          />
+          <div class="flex items-center gap-2">
+            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+              <i class="pi pi-shield text-base"></i>
+            </span>
+            <span class="font-bold text-lg text-white tracking-tight">EcoTanti</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navegación con scroll independiente -->
+      <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        
+        <!-- INICIO (Enlace directo) -->
+        <a
+          routerLink="/home"
+          routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold border-indigo-500/30"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="close()"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors border border-transparent text-sm"
+        >
+          <i class="pi pi-home text-base"></i>
+          <span>Inicio</span>
+        </a>
+
+        <!-- Separador sutil -->
+        <div class="my-2 border-t border-slate-800/80"></div>
+
+        <!-- FAVORITOS (Acordeón colapsable) -->
+        <div>
+          <button
+            type="button"
+            (click)="toggleSection('favoritos')"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-star text-base text-amber-400"></i>
+              <span>Favoritos</span>
+            </div>
+            <i
+              class="pi pi-chevron-down text-xs transition-transform duration-200 text-slate-400"
+              [class.rotate-180]="openSections().favoritos"
+            ></i>
+          </button>
+          @if (openSections().favoritos) {
+            <div class="pl-7 pr-2 py-1 space-y-1">
+              <p class="text-xs text-slate-500 italic px-3 py-1">Sin favoritos guardados</p>
+            </div>
+          }
+        </div>
+
+        <!-- CATÁLOGO (Acordeón colapsable) -->
+        <div>
+          <button
+            type="button"
+            (click)="toggleSection('catalogo')"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-th-large text-base text-indigo-400"></i>
+              <span>Catálogo</span>
+            </div>
+            <i
+              class="pi pi-chevron-down text-xs transition-transform duration-200 text-slate-400"
+              [class.rotate-180]="openSections().catalogo"
+            ></i>
+          </button>
+          @if (openSections().catalogo) {
+            <div class="pl-7 pr-2 py-1 space-y-1 border-l border-slate-800 ml-5 my-1">
+              <a
+                routerLink="/marcas"
+                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                (click)="close()"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+              >
+                <i class="pi pi-tag text-xs"></i>
+                <span>Marcas</span>
+              </a>
+              <a
+                routerLink="/productos"
+                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                (click)="close()"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+              >
+                <i class="pi pi-box text-xs"></i>
+                <span>Productos</span>
+              </a>
+              <a
+                routerLink="/ofertas"
+                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                (click)="close()"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+              >
+                <i class="pi pi-percentage text-xs"></i>
+                <span>Ofertas</span>
+              </a>
+              <a
+                routerLink="/promociones"
+                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                (click)="close()"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+              >
+                <i class="pi pi-megaphone text-xs"></i>
+                <span>Promociones</span>
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- GESTIÓN DE USUARIOS (Acordeón colapsable) -->
+        <div>
+          <button
+            type="button"
+            (click)="toggleSection('usuarios')"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-users text-base text-cyan-400"></i>
+              <span>Gestión de Usuarios</span>
+            </div>
+            <i
+              class="pi pi-chevron-down text-xs transition-transform duration-200 text-slate-400"
+              [class.rotate-180]="openSections().usuarios"
+            ></i>
+          </button>
+          @if (openSections().usuarios) {
+            <div class="pl-7 pr-2 py-1 space-y-1 border-l border-slate-800 ml-5 my-1">
+              <a
+                routerLink="/usuarios"
+                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                (click)="close()"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+              >
+                <i class="pi pi-user text-xs"></i>
+                <span>Usuarios</span>
+              </a>
+            </div>
+          }
+        </div>
+
+        <!-- REPORTES (Acordeón colapsable) -->
+        <div>
+          <button
+            type="button"
+            (click)="toggleSection('reportes')"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-chart-bar text-base text-emerald-400"></i>
+              <span>Reportes</span>
+            </div>
+            <i
+              class="pi pi-chevron-down text-xs transition-transform duration-200 text-slate-400"
+              [class.rotate-180]="openSections().reportes"
+            ></i>
+          </button>
+          @if (openSections().reportes) {
+            <div class="pl-7 pr-2 py-1 space-y-1 border-l border-slate-800 ml-5 my-1">
+              <a
+                routerLink="/reportes"
+                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                (click)="close()"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+              >
+                <i class="pi pi-file text-xs"></i>
+                <span>Métricas Generales</span>
+              </a>
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- Pie del Drawer -->
+      <div class="p-3 border-t border-slate-800/80 text-center shrink-0">
+        <span class="text-[11px] text-slate-500 font-mono">v1.0.0 • EcoTanti Backoffice</span>
+      </div>
+
+    </div>
+  </ng-template>
+</p-drawer>
+

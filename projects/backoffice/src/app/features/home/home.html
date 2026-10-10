@@ -1,0 +1,122 @@
+<div class="space-y-8 animate-fadein">
+  <!-- Bienvenida y Encabezado Principal -->
+  <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+    <div class="relative z-10 space-y-3">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Panel Administrativo Activo</span>
+      </div>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+        Bienvenido a EcoTanti Backoffice
+      </h1>
+      <p class="text-slate-400 text-sm md:text-base max-w-2xl leading-relaxed">
+        Plataforma centralizada de gestión de catálogo, marcas, productos, promociones y usuarios con control de roles y permisos.
+      </p>
+      @if (userEmail()) {
+        <div class="pt-2 flex items-center gap-2 text-xs text-slate-400">
+          <i class="pi pi-user text-indigo-400"></i>
+          <span>Sesión iniciada como: <strong class="text-slate-200">{{ userEmail() }}</strong></span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Accesos Rápidos a Módulos del Sistema -->
+  <div>
+    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+      <i class="pi pi-th-large text-indigo-400"></i>
+      Módulos Disponibles
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      
+      <!-- Card: Catálogo de Productos -->
+      <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-950/20 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <i class="pi pi-box text-2xl"></i>
+          </div>
+          <h3 class="font-bold text-lg text-white">Catálogo de Productos</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Administración completa de marcas, artículos, listas de precios, stock e imágenes.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <a
+            routerLink="/productos"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors"
+          >
+            <span>Ver Productos</span>
+            <i class="pi pi-arrow-right text-xs"></i>
+          </a>
+          <a
+            routerLink="/marcas"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+          >
+            <span>Marcas</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card: Ofertas y Promociones -->
+      <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-950/20 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="w-12 h-12 rounded-xl bg-amber-600/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <i class="pi pi-percentage text-2xl"></i>
+          </div>
+          <h3 class="font-bold text-lg text-white">Ofertas & Promociones</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Configuración de descuentos por categoría, cupones y banners destacados para el Storefront.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <a
+            routerLink="/ofertas"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors"
+          >
+            <span>Gestionar Ofertas</span>
+            <i class="pi pi-arrow-right text-xs"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card: Gestión de Usuarios -->
+      <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-950/20 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="w-12 h-12 rounded-xl bg-cyan-600/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <i class="pi pi-users text-2xl"></i>
+          </div>
+          <h3 class="font-bold text-lg text-white">Gestión de Usuarios</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Asignación de roles administrativos, control de accesos por permisos y auditoría de eventos.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <a
+            routerLink="/usuarios"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors"
+          >
+            <span>Administrar Personal</span>
+            <i class="pi pi-arrow-right text-xs"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Barra Informativa de Seguridad & Estado -->
+  <div class="bg-slate-900/50 border border-slate-800/80 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+    <div class="flex items-center gap-2">
+      <i class="pi pi-lock text-indigo-400"></i>
+      <span>Ambiente protegido con autenticación Supabase y functional guards (RBAC).</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Conectado a BD
+      </span>
+      <span class="font-mono text-slate-500">v1.0.0</span>
+    </div>
+  </div>
+</div>
+

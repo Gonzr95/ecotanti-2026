@@ -6,6 +6,10 @@ const canonical = fs.realpathSync.native(process.cwd());
 const driveLetterUpper = canonical.charAt(0).toUpperCase() + canonical.slice(1);
 
 const extraArgs = process.argv.slice(3);
+if (!extraArgs.some((arg) => arg.includes('--watch'))) {
+  extraArgs.push('--watch=false');
+}
+
 const command = process.platform === 'win32' ? 'cmd.exe' : 'npx';
 const args = process.platform === 'win32'
   ? ['/c', 'npx', 'nx', 'test', targetProject, ...extraArgs]
@@ -23,4 +27,3 @@ const res = spawnSync(command, args, {
 });
 
 process.exit(res.status || 0);
-

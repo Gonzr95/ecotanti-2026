@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { User } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
@@ -8,9 +8,7 @@ export interface AuthResult {
   user?: User;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class AuthService {
   private readonly supabase = inject(SupabaseService);
 
@@ -41,11 +39,15 @@ export class AuthService {
         .select('role_id')
         .eq('user_id', authData.user.id);
 
+      if (rolesError) {
+        console.error('Error al consultar user_roles en Supabase:', rolesError);
+      }
+
       if (rolesError || !userRoles || userRoles.length === 0) {
         // Intento de acceso no autorizado (cliente o usuario sin roles de staff)
         // Se registra silenciosamente en security_logs para auditoría
         try {
-          await this.supabase.from('security_logs').insert({
+          const { error: logError } = await this.supabase.from('security_logs').insert({
             user_id: authData.user.id,
             attempted_mail: cleanEmail,
             event_type: 'unauthorized_backoffice_attempt',
@@ -53,6 +55,9 @@ export class AuthService {
               reason: 'Usuario autenticado sin roles de personal en user_roles',
             },
           });
+          if (logError) {
+            console.error('Error al registrar security_log en Supabase:', logError);
+          }
         } catch (logErr) {
           console.error('Error al registrar security_log:', logErr);
         }

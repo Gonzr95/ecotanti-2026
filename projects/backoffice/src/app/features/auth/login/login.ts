@@ -77,7 +77,7 @@ export class LoginComponent {
         summary: 'Acceso Autorizado',
         detail: 'Iniciando sesión en el panel...',
       });
-      // Redirigir al dashboard (por ahora recarga / mantiene en panel)
+      await this.router.navigate(['/home']);
     } else {
       const err = result.error || 'Credenciales incorrectas';
       this.errorMessage.set(err);

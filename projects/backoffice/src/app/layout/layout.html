@@ -1,0 +1,14 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+  <!-- Cabecera Superior Fija (YouTube style) -->
+  <app-header (toggleMenu)="toggleDrawer()" />
+
+  <!-- Menú Lateral Desplegable Headless -->
+  <app-drawer [(visible)]="isDrawerOpen" />
+
+  <!-- Contenedor Principal con compensación de altura del Header fijo -->
+  <main class="flex-1 pt-16">
+    <div class="max-w-7xl w-full mx-auto p-4 md:p-8">
+      <router-outlet />
+    </div>
+  </main>
+</div>

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { provideOptimus } from '@openng/optimus-ui/config';
 import Aura from '@openng/optimus-ui-themes/aura';
 import { MessageService } from '@openng/optimus-ui/api';
@@ -21,7 +21,7 @@ describe('LoginComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: 'home', component: LoginComponent }]),
         provideOptimus({ theme: { preset: Aura } }),
         { provide: AuthService, useValue: authServiceMock },
       ],
@@ -75,6 +75,9 @@ describe('LoginComponent', () => {
   });
 
   it('should handle successful login flow', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
     authServiceMock.loginStaff.mockResolvedValueOnce({
       success: true,
       user: { id: 'usr-1', email: 'admin@ecotanti.com' },
@@ -89,6 +92,7 @@ describe('LoginComponent', () => {
     await component.onSubmit();
 
     expect(authServiceMock.loginStaff).toHaveBeenCalledWith('admin@ecotanti.com', 'password123');
+    expect(navigateSpy).toHaveBeenCalledWith(['/home']);
     expect(component.loading()).toBe(false);
     expect(component.errorMessage()).toBeNull();
   });
