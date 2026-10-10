@@ -29,6 +29,15 @@ export const staffGuard: CanActivateFn = async () => {
       return router.createUrlTree(['/']);
     }
 
+    // Asegurar que los permisos estén cargados en el Signal de AuthService (incluso tras F5 / refresh)
+    if (authService.userPermissions && authService.userPermissions().length === 0) {
+      try {
+        await authService.loadUserPermissions(user.id);
+      } catch (loadErr) {
+        console.warn('Advertencia al cargar permisos en staffGuard:', loadErr);
+      }
+    }
+
     return true;
   } catch {
     return router.createUrlTree(['/']);

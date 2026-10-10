@@ -4,7 +4,7 @@ import { provideOptimus } from '@openng/optimus-ui/config';
 import Aura from '@openng/optimus-ui-themes/aura';
 import { MessageService } from '@openng/optimus-ui/api';
 import { AuthService } from '@ecotanti/shared-auth';
-import { LoginComponent } from './login';
+import { LoginComponent, REDIRECT_DELAY_MS } from './login';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -24,6 +24,7 @@ describe('LoginComponent', () => {
         provideRouter([{ path: 'home', component: LoginComponent }]),
         provideOptimus({ theme: { preset: Aura } }),
         { provide: AuthService, useValue: authServiceMock },
+        { provide: REDIRECT_DELAY_MS, useValue: 0 },
       ],
     }).compileComponents();
 
@@ -94,7 +95,18 @@ describe('LoginComponent', () => {
     expect(authServiceMock.loginStaff).toHaveBeenCalledWith('admin@ecotanti.com', 'password123');
     expect(navigateSpy).toHaveBeenCalledWith(['/home']);
     expect(component.loading()).toBe(false);
+    expect(component.isRedirecting()).toBe(false);
     expect(component.errorMessage()).toBeNull();
+  });
+
+  it('should render loading overlay with blur and spinner when isRedirecting is true', async () => {
+    component.isRedirecting.set(true);
+    fixture.detectChanges();
+
+    const overlay = fixture.nativeElement.querySelector('.backdrop-blur-md');
+    expect(overlay).toBeTruthy();
+    expect(overlay.textContent).toContain('Acceso Verificado');
+    expect(overlay.textContent).toContain('Cargando panel de administración...');
   });
 
   it('should handle failed login and show obfuscated error', async () => {

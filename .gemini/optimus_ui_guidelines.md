@@ -3,7 +3,8 @@
 > **Librería de Componentes:** Optimus UI (`@openng/optimus-ui`), fork comunitario de PrimeNG.  
 > **Iconos:** `@openng/icons` (`pi pi-<nombre>`).  
 > **Estilos:** Tailwind CSS v4 + `@openng/optimus-ui-tailwindcss`.  
-> **Tema Activo:** Aura (`@openng/optimus-ui-themes/aura`).
+> **Tema Backoffice:** `BackofficeTheme` (`projects/backoffice/src/app/theme/backoffice.theme.ts`), preset que extiende `Aura` con paleta primaria `Indigo`, superficie oscura `Slate` y `rounded-xl`.
+> **Regla de Oro:** NO forzar colores en componentes nativos con clases `!important` (`!bg-indigo-600`, `!bg-slate-950`). Los botones e inputs toman sus estilos automáticamente del tema.
 
 ---
 
@@ -98,4 +99,64 @@ Para evitar que los Diálogos o Drawers parpadeen o reaparezcan por un milisegun
   * Advertencia: `pi pi-exclamation-triangle`
   * Búsqueda: `pi pi-search`
   * Sincronizar: `pi pi-sync`
+
+---
+
+## 7. Estrategia Obligatoria de Lazy Loading
+
+Todo componente y vista desarrollado para el Backoffice **debe implementar carga diferida (lazy loading)** para mantener bundles reducidos y tiempos de carga instantáneos:
+
+### A. A Nivel de Enrutador (`app.routes.ts`)
+Toda ruta hija debe utilizar `loadComponent` con importación dinámica:
+```typescript
+{
+  path: 'marcas',
+  title: 'Marcas - EcoTanti Backoffice',
+  canActivate: [permissionGuard],
+  data: { permission: 'catalog.brands.view' },
+  loadComponent: () =>
+    import('./features/catalog/brands/brands').then((m) => m.BrandsComponent),
+}
+```
+
+### B. A Nivel de Plantilla (`@defer`)
+Para modales complejos, visualizadores de imágenes o componentes secundarios pesados, utilizar la sintaxis `@defer` nativa de Angular:
+```html
+@defer (on interaction(botonNuevo)) {
+  <app-brand-form-dialog [(visible)]="showDialog" />
+} @placeholder {
+  <!-- Placeholder mínimo sin costo de bundle inicial -->
+}
+```
+
+---
+
+## 8. Experiencia de Carga: Skeletons & Spinners
+
+Para optimizar la percepción de velocidad y evitar saltos visuales (*Cumulative Layout Shift*), todas las vistas del Backoffice deben incorporar feedback visual reactivo:
+
+### A. Carga Inicial de Datos y Tablas con Skeleton (`<p-skeleton>`)
+* **Cuándo usar:** Al consultar listados de Supabase (marcas, productos, pedidos, estadísticas).
+* **Importación:**
+  ```typescript
+  import { Skeleton } from '@openng/optimus-ui/skeleton'; // o SkeletonModule
+  ```
+* **Patrón de Tabla / Lista con Skeleton:**
+  ```html
+  @if (loading()) {
+    <div class="space-y-3">
+      <p-skeleton height="2.5rem" styleClass="w-full" />
+      <p-skeleton height="2.5rem" styleClass="w-full" />
+      <p-skeleton height="2.5rem" styleClass="w-full" />
+    </div>
+  } @else {
+    <!-- Renderizado de datos reales -->
+  }
+  ```
+* **Tarjetas y Resúmenes:** Combinar formas circulares y rectangulares (`shape="circle"`, `width="3rem"`, `height="3rem"` para avatares o iconos).
+
+### B. Acciones y Mutaciones con Spinners
+* **Botones de Guardado / Envío:** Vincular la señal reactiva `[loading]="isSaving()"` y `[disabled]="isSaving()"` en el `<p-button>`. Optimus UI renderiza automáticamente el spinner con el tema configurado (`BackofficeTheme`).
+* **Procesos Bloqueantes / Transiciones:** Utilizar overlay con desenfoque de fondo (`backdrop-blur-md bg-slate-950/80`) y mensaje contextual descriptivo para dar feedback inmediato al usuario durante operaciones críticas.
+
 

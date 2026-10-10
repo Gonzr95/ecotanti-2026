@@ -1,5 +1,30 @@
 <p-toast position="top-right" />
 
+<!-- Overlay de Transición y Carga en Primer Plano con Efecto Blur -->
+@if (isRedirecting()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md transition-all duration-300">
+    <div class="flex flex-col items-center text-center p-8 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl max-w-sm w-full mx-4 space-y-5">
+      
+      <!-- Spinner Moderno con Escudo Central -->
+      <div class="relative flex items-center justify-center w-16 h-16">
+        <div class="w-16 h-16 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+        <i class="pi pi-shield text-indigo-400 text-xl absolute"></i>
+      </div>
+
+      <!-- Leyenda de Carga -->
+      <div class="space-y-1">
+        <h2 class="text-lg font-semibold text-white tracking-tight">Acceso Verificado</h2>
+        <p class="text-sm text-slate-400">Cargando panel de administración...</p>
+      </div>
+
+      <!-- Barra sutil de carga/progreso -->
+      <div class="w-48 h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div class="h-full bg-indigo-500 rounded-full animate-pulse w-full"></div>
+      </div>
+    </div>
+  </div>
+}
+
 <div class="min-h-screen w-full flex items-center justify-center bg-slate-950 p-4">
   <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8 space-y-6">
     
@@ -36,7 +61,7 @@
             pInputText
             formControlName="email"
             placeholder="admin@ecotanti.com"
-            class="w-full !bg-slate-950 !border-slate-800 !text-slate-100 placeholder:!text-slate-600 focus:!border-indigo-500"
+            class="w-full"
             [class.!border-red-500]="emailControl.touched && emailControl.invalid"
           />
         </p-iconfield>
@@ -68,7 +93,7 @@
           [feedback]="false"
           placeholder="••••••••"
           styleClass="w-full block"
-          inputStyleClass="w-full !bg-slate-950 !border-slate-800 !text-slate-100 placeholder:!text-slate-600 focus:!border-indigo-500"
+          inputStyleClass="w-full"
           [class.!border-red-500]="passwordControl.touched && passwordControl.invalid"
         />
         @if (passwordControl.touched && passwordControl.errors?.['required']) {
@@ -83,11 +108,11 @@
       <div class="pt-2">
         <p-button
           type="submit"
-          label="Ingresar al Panel"
-          icon="pi pi-sign-in"
+          [label]="loading() ? 'Verificando...' : 'Ingresar al Panel'"
+          [icon]="loading() ? '' : 'pi pi-sign-in'"
           [loading]="loading()"
-          [disabled]="loginForm.invalid || loading()"
-          styleClass="w-full !py-3 !bg-indigo-600 hover:!bg-indigo-500 !border-none !text-white !font-medium !rounded-xl !shadow-lg !shadow-indigo-950"
+          [disabled]="loginForm.invalid || loading() || isRedirecting()"
+          styleClass="w-full !py-3 shadow-lg shadow-indigo-950"
         />
       </div>
 

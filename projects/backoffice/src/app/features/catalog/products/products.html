@@ -1,0 +1,41 @@
+<div class="space-y-6">
+  <!-- Encabezado de la página -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+        <i class="pi pi-box text-indigo-400 text-xl"></i>
+        <span>Productos</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">
+        Administración general de productos, precios, inventario y catálogo de la tienda
+      </p>
+    </div>
+    <div>
+      <p-button
+        label="Nuevo Producto"
+        icon="pi pi-plus"
+        (onClick)="openNewProductWizard()"
+      />
+    </div>
+  </div>
+
+  <!-- Estado Inicial -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+      <i class="pi pi-box text-2xl"></i>
+    </div>
+    <div class="max-w-md mx-auto space-y-1">
+      <h3 class="text-lg font-semibold text-white">Catálogo de Productos</h3>
+      <p class="text-sm text-slate-400">
+        Haz clic en <span class="text-indigo-400 font-medium">"Nuevo Producto"</span> para registrar un nuevo artículo a través del asistente por etapas.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Dedicado con Asistente / Stepper -->
+<app-product-create-wizard
+  [(visible)]="isWizardVisible"
+  (productCreated)="onProductCreated($event)"
+/>
+

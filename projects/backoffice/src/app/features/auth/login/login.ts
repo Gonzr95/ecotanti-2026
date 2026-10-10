@@ -1,7 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, InjectionToken, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+
+// Injection token para configurar la demora visual antes de redirigir (testable)
+export const REDIRECT_DELAY_MS = new InjectionToken<number>('REDIRECT_DELAY_MS', {
+  factory: () => 1200,
+});
 
 // Optimus UI & Icons (según .gemini/optimus_ui_guidelines.md)
 import { Button } from '@openng/optimus-ui/button';
@@ -38,9 +43,11 @@ export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
+  private readonly redirectDelayMs = inject(REDIRECT_DELAY_MS, { optional: true }) ?? 1200;
 
   // Estado reactivo con Signals
   readonly loading = signal<boolean>(false);
+  readonly isRedirecting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
 
   // Formulario reactivo tipado
@@ -69,16 +76,21 @@ export class LoginComponent {
 
     const { email, password } = this.loginForm.getRawValue();
     const result = await this.authService.loginStaff(email, password);
-    this.loading.set(false);
 
     if (result.success) {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Acceso Autorizado',
-        detail: 'Iniciando sesión en el panel...',
-      });
+      // Activar overlay de transición con blur y spinner en primer plano
+      this.isRedirecting.set(true);
+
+      // Breve pausa deliberada para percibir la carga del panel
+      if (this.redirectDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, this.redirectDelayMs));
+      }
+
       await this.router.navigate(['/home']);
+      this.loading.set(false);
+      this.isRedirecting.set(false);
     } else {
+      this.loading.set(false);
       const err = result.error || 'Credenciales incorrectas';
       this.errorMessage.set(err);
       this.messageService.add({

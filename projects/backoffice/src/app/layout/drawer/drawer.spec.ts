@@ -2,18 +2,29 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideOptimus } from '@openng/optimus-ui/config';
 import Aura from '@openng/optimus-ui-themes/aura';
+import { AuthService } from '@ecotanti/shared-auth';
 import { DrawerComponent } from './drawer';
 
 describe('DrawerComponent', () => {
   let component: DrawerComponent;
   let fixture: ComponentFixture<DrawerComponent>;
+  let authServiceMock: {
+    hasPermission: ReturnType<typeof vi.fn>;
+    hasAnyPermission: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
+    authServiceMock = {
+      hasPermission: vi.fn().mockReturnValue(true),
+      hasAnyPermission: vi.fn().mockReturnValue(true),
+    };
+
     await TestBed.configureTestingModule({
       imports: [DrawerComponent],
       providers: [
         provideRouter([]),
         provideOptimus({ theme: { preset: Aura } }),
+        { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();
 

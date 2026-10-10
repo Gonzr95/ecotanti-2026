@@ -1,0 +1,593 @@
+<p-toast position="top-right" />
+
+<!-- Diálogo Principal del Wizard -->
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [dismissableMask]="false"
+  [draggable]="false"
+  [style]="{ width: '92vw', maxWidth: '680px' }"
+  (onHide)="closeWizard()"
+>
+  <!-- Encabezado con Progreso y Paso Actual -->
+  <ng-template #header>
+    <div class="w-full pr-6 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <i class="pi pi-box text-sm"></i>
+          </span>
+          <div>
+            <h2 class="text-lg font-bold text-white tracking-tight">Nuevo Producto</h2>
+            <p class="text-xs text-slate-400 font-medium">
+              Paso {{ currentStep() }} de {{ totalSteps }}: <span class="text-indigo-300">{{ currentStepTitle() }}</span>
+            </p>
+          </div>
+        </div>
+
+        <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+          {{ progressPercentage() }}%
+        </span>
+      </div>
+
+      <!-- Barra de Progreso Optimus UI -->
+      <p-progressbar
+        [value]="progressPercentage()"
+        [showValue]="false"
+        styleClass="h-1.5 rounded-full bg-slate-800"
+      />
+
+      <!-- Indicadores de Pasos Clickeables -->
+      <div class="flex items-center justify-between gap-1 pt-1">
+        @for (stepNum of [1, 2, 3, 4, 5]; track stepNum) {
+          <button
+            type="button"
+            (click)="goToStep(stepNum)"
+            class="flex-1 py-1 text-center rounded-md text-xs font-medium transition-all"
+            [class.bg-indigo-600]="currentStep() === stepNum"
+            [class.text-white]="currentStep() === stepNum"
+            [class.bg-indigo-950_40]="currentStep() > stepNum"
+            [class.text-indigo-400]="currentStep() > stepNum"
+            [class.text-slate-500]="currentStep() < stepNum"
+            [class.hover_bg-slate-800]="currentStep() !== stepNum"
+          >
+            Paso {{ stepNum }}
+          </button>
+        }
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Cuerpo del Formulario por Pasos -->
+  <form [formGroup]="productForm" class="py-2 space-y-5">
+    
+    <!-- PASO 1: INFORMACIÓN BÁSICA (Nombre y Marca) -->
+    @if (currentStep() === 1) {
+      <div class="space-y-4">
+        <!-- Campo Nombre -->
+        <div class="space-y-1.5">
+          <label for="name" class="block text-sm font-medium text-slate-300">
+            Nombre del Producto <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="name"
+            pInputText
+            formControlName="name"
+            placeholder="Ej: Yerba Mate Orgánica 500g"
+            class="w-full"
+          />
+          @if (productForm.controls.name.invalid && productForm.controls.name.touched) {
+            <p class="text-rose-400 text-xs">El nombre es obligatorio (mínimo 2 caracteres).</p>
+          }
+        </div>
+
+        <!-- Campo Marca -->
+        <div class="space-y-1.5">
+          <label for="brand_id" class="block text-sm font-medium text-slate-300">
+            Marca <span class="text-rose-400">*</span>
+          </label>
+          <p-select
+            id="brand_id"
+            formControlName="brand_id"
+            [options]="brands()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Selecciona una marca..."
+            styleClass="w-full"
+            [filter]="true"
+            filterPlaceholder="Buscar marca..."
+          />
+          @if (productForm.controls.brand_id.invalid && productForm.controls.brand_id.touched) {
+            <p class="text-rose-400 text-xs">Debes seleccionar una marca para el producto.</p>
+          }
+        </div>
+
+        <!-- Campo Descripción -->
+        <div class="space-y-1.5">
+          <label for="description" class="block text-sm font-medium text-slate-300">
+            Descripción (Opcional)
+          </label>
+          <textarea
+            id="description"
+            pTextarea
+            formControlName="description"
+            rows="3"
+            placeholder="Detalles sobre presentación, ingredientes, beneficios..."
+            class="w-full text-sm"
+          ></textarea>
+        </div>
+      </div>
+    }
+
+    <!-- PASO 2: PRECIOS Y COSTOS -->
+    @if (currentStep() === 2) {
+      <div class="space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Precio Base -->
+          <div class="space-y-1.5">
+            <label for="base_price" class="block text-sm font-medium text-slate-300">
+              Precio Base (Venta) <span class="text-rose-400">*</span>
+            </label>
+            <p-inputnumber
+              id="base_price"
+              formControlName="base_price"
+              mode="currency"
+              currency="ARS"
+              locale="es-AR"
+              placeholder="$ 0,00"
+              styleClass="w-full"
+            />
+            @if (productForm.controls.base_price.invalid && productForm.controls.base_price.touched) {
+              <p class="text-rose-400 text-xs">El precio base debe ser mayor a 0.</p>
+            }
+          </div>
+
+          <!-- Costo de Reposición -->
+          <div class="space-y-1.5">
+            <label for="cost_price" class="block text-sm font-medium text-slate-300">
+              Costo de Adquisición <span class="text-rose-400">*</span>
+            </label>
+            <p-inputnumber
+              id="cost_price"
+              formControlName="cost_price"
+              mode="currency"
+              currency="ARS"
+              locale="es-AR"
+              placeholder="$ 0,00"
+              styleClass="w-full"
+            />
+            @if (productForm.controls.cost_price.invalid && productForm.controls.cost_price.touched) {
+              <p class="text-rose-400 text-xs">El costo de reposición es obligatorio para calcular rentabilidad.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Precio de Oferta -->
+        <div class="space-y-1.5">
+          <label for="sale_price" class="block text-sm font-medium text-slate-300">
+            Precio de Oferta (Opcional)
+          </label>
+          <p-inputnumber
+            id="sale_price"
+            formControlName="sale_price"
+            mode="currency"
+            currency="ARS"
+            locale="es-AR"
+            placeholder="Dejar vacío si no está en descuento"
+            styleClass="w-full"
+          />
+          @if (
+            productForm.controls.sale_price.value &&
+            productForm.controls.base_price.value &&
+            productForm.controls.sale_price.value >= productForm.controls.base_price.value
+          ) {
+            <p class="text-rose-400 text-xs">El precio de oferta debe ser menor al precio base.</p>
+          }
+        </div>
+
+        <!-- Tarjeta de Ayuda Visual: Rentabilidad en Tiempo Real -->
+        @if (calculatedGrossProfit() !== null) {
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-indigo-500/30 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+                <i class="pi pi-chart-line text-indigo-400"></i>
+                Análisis de Rentabilidad Proyectada
+              </span>
+              <span
+                class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                [class.bg-emerald-500_20]="calculatedGrossProfit()! > 0"
+                [class.text-emerald-400]="calculatedGrossProfit()! > 0"
+                [class.bg-rose-500_20]="calculatedGrossProfit()! <= 0"
+                [class.text-rose-400]="calculatedGrossProfit()! <= 0"
+              >
+                {{ calculatedMarginPercent() | number:'1.1-1' }}% margen
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span class="text-xs text-slate-400 block">Ganancia Bruta Regular:</span>
+                <span class="font-bold text-white text-base">
+                  $ {{ calculatedGrossProfit() | number:'1.2-2' }}
+                </span>
+              </div>
+              @if (calculatedSaleProfit() !== null) {
+                <div>
+                  <span class="text-xs text-slate-400 block">Ganancia en Oferta:</span>
+                  <span class="font-bold text-amber-400 text-base">
+                    $ {{ calculatedSaleProfit() | number:'1.2-2' }} ({{ calculatedSaleMarginPercent() | number:'1.1-1' }}%)
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- PASO 3: STOCK Y CATEGORÍAS -->
+    @if (currentStep() === 3) {
+      <div class="space-y-4">
+        <!-- Stock Inicial -->
+        <div class="space-y-1.5">
+          <label for="stock" class="block text-sm font-medium text-slate-300">
+            Stock Inicial (Unidades) <span class="text-rose-400">*</span>
+          </label>
+          <p-inputnumber
+            id="stock"
+            formControlName="stock"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            [min]="0"
+            [step]="1"
+            placeholder="0"
+            styleClass="w-full"
+            incrementButtonIcon="pi pi-plus"
+            decrementButtonIcon="pi pi-minus"
+          />
+          @if (productForm.controls.stock.invalid && productForm.controls.stock.touched) {
+            <p class="text-rose-400 text-xs">El stock debe ser un número entero mayor o igual a 0.</p>
+          }
+        </div>
+
+        <!-- Categoría Principal -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label for="category_id" class="block text-sm font-medium text-slate-300">
+              Categoría <span class="text-rose-400">*</span>
+            </label>
+            <button
+              type="button"
+              (click)="toggleInlineCategory()"
+              class="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium"
+            >
+              {{ isInlineCategoryOpen() ? 'Cancelar nueva categoría' : '+ Crear categoría rápida' }}
+            </button>
+          </div>
+
+          <p-select
+            id="category_id"
+            formControlName="category_id"
+            [options]="categories()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Selecciona una categoría..."
+            styleClass="w-full"
+            [filter]="true"
+            filterPlaceholder="Buscar categoría..."
+          />
+          @if (productForm.controls.category_id.invalid && productForm.controls.category_id.touched) {
+            <p class="text-rose-400 text-xs">Debes seleccionar una categoría para el producto.</p>
+          }
+        </div>
+
+        <!-- Panel Expandible Inline para Creación Rápida de Categoría -->
+        @if (isInlineCategoryOpen()) {
+          <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+            <div class="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase">
+              <i class="pi pi-plus-circle"></i>
+              <span>Crear Nueva Categoría</span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                pInputText
+                type="text"
+                [value]="inlineCategoryName()"
+                (input)="inlineCategoryName.set($any($event.target).value)"
+                placeholder="Nombre de la categoría..."
+                class="flex-1 text-sm"
+              />
+              <p-button
+                label="Guardar y Elegir"
+                icon="pi pi-check"
+                [loading]="isCreatingCategory()"
+                [disabled]="!inlineCategoryName().trim() || isCreatingCategory()"
+                (onClick)="saveInlineCategory()"
+              />
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- PASO 4: IMÁGENES DEL PRODUCTO -->
+    @if (currentStep() === 4) {
+      <div class="space-y-4">
+        <!-- Métodos de Carga (URL y Archivo) -->
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+          <span class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Agregar Imágenes
+          </span>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              pInputText
+              type="text"
+              [value]="imageUrlInput()"
+              (input)="imageUrlInput.set($any($event.target).value)"
+              placeholder="https://ejemplo.com/foto-producto.jpg"
+              class="flex-1 text-sm"
+            />
+            <p-button
+              label="Agregar URL"
+              icon="pi pi-link"
+              [text]="true"
+              severity="secondary"
+              (onClick)="addImageUrl()"
+              [disabled]="!imageUrlInput().trim()"
+            />
+          </div>
+
+          <!-- Selector de Archivo / Cámara en Dispositivos Móviles -->
+          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+            <label
+              class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20"
+            >
+              <i class="pi pi-camera"></i>
+              <span>Subir Foto / Tomar con Cámara</span>
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onFileSelected($event)"
+                class="hidden"
+                [disabled]="isUploadingImage()"
+              />
+            </label>
+
+            @if (isUploadingImage()) {
+              <span class="text-xs text-indigo-400 flex items-center gap-1.5 font-medium">
+                <i class="pi pi-spin pi-spinner"></i> Subiendo imagen...
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Galería de Imágenes Cargadas -->
+        @if (images().length > 0) {
+          <div class="space-y-2">
+            <span class="text-xs font-medium text-slate-400 block">
+              Imágenes cargadas ({{ images().length }}): La primera es la portada principal.
+            </span>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              @for (imgUrl of images(); track imgUrl; let idx = $index) {
+                <div class="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-1.5 space-y-1.5">
+                  <div class="aspect-square rounded-lg overflow-hidden relative">
+                    <img [src]="imgUrl" alt="Producto" class="w-full h-full object-contain" />
+                    @if (idx === 0) {
+                      <span class="absolute top-1.5 left-1.5 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                        Portada
+                      </span>
+                    }
+                  </div>
+                  <div class="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                    @if (idx !== 0) {
+                      <button
+                        type="button"
+                        (click)="setCoverImage(idx)"
+                        class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
+                      >
+                        Hacer Portada
+                      </button>
+                    } @else {
+                      <span class="text-[11px] text-slate-500 font-medium">Principal</span>
+                    }
+                    <button
+                      type="button"
+                      (click)="removeImage(idx)"
+                      class="text-rose-400 hover:text-rose-300 text-xs p-1"
+                      title="Eliminar imagen"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="p-6 text-center border border-dashed border-slate-800 rounded-xl space-y-1 text-slate-500">
+            <i class="pi pi-image text-2xl"></i>
+            <p class="text-xs">No hay imágenes cargadas todavía (este paso es opcional).</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- PASO 5: ESTADOS, RESUMEN Y CONFIRMACIÓN -->
+    @if (currentStep() === 5) {
+      <div class="space-y-4">
+        <!-- Toggles de Estado -->
+        <div class="space-y-2">
+          <!-- Activo -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800">
+            <div>
+              <span class="block text-sm font-medium text-slate-200">Producto Activo</span>
+              <span class="block text-xs text-slate-400">Visible para los clientes en la tienda online.</span>
+            </div>
+            <p-toggleswitch formControlName="is_active" />
+          </div>
+
+          <!-- Destacado -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800">
+            <div>
+              <span class="block text-sm font-medium text-slate-200">Producto Destacado</span>
+              <span class="block text-xs text-slate-400">Se mostrará en la sección de destacados de la página principal.</span>
+            </div>
+            <p-toggleswitch formControlName="is_highlight" />
+          </div>
+
+          <!-- En Oferta -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/50 border border-slate-800">
+            <div>
+              <span class="block text-sm font-medium text-slate-200">En Oferta</span>
+              <span class="block text-xs text-slate-400">Aplica la insignia de oferta y utiliza el precio promocional si fue cargado.</span>
+            </div>
+            <p-toggleswitch formControlName="is_on_sale" />
+          </div>
+        </div>
+
+        <!-- Ficha Técnica de Resumen -->
+        <div class="p-4 rounded-xl bg-slate-950/90 border border-indigo-500/20 space-y-3">
+          <span class="text-xs uppercase tracking-wider font-semibold text-slate-400 block border-b border-slate-800 pb-2">
+            Ficha Técnica Resumida
+          </span>
+
+          <div class="flex items-center gap-3.5">
+            @if (images().length > 0) {
+              <img
+                [src]="images()[0]"
+                alt="Portada"
+                class="w-14 h-14 rounded-xl object-contain bg-slate-900 border border-slate-800 p-1 shrink-0"
+              />
+            } @else {
+              <div class="w-14 h-14 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                <i class="pi pi-box text-xl"></i>
+              </div>
+            }
+
+            <div class="space-y-0.5">
+              <h4 class="font-bold text-white text-base">
+                {{ productForm.controls.name.value || 'Sin nombre' }}
+              </h4>
+              <p class="text-xs text-slate-400">
+                <span class="text-indigo-400">{{ selectedBrandName() }}</span> •
+                <span>{{ selectedCategoryName() }}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/60 text-xs">
+            <div>
+              <span class="text-slate-500 block">Precio Base:</span>
+              <span class="font-bold text-slate-200 font-mono">
+                $ {{ productForm.controls.base_price.value | number:'1.2-2' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-slate-500 block">Costo:</span>
+              <span class="font-bold text-slate-300 font-mono">
+                $ {{ productForm.controls.cost_price.value | number:'1.2-2' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-slate-500 block">Margen:</span>
+              <span class="font-bold text-emerald-400 font-mono">
+                {{ calculatedMarginPercent() | number:'1.1-1' }}%
+              </span>
+            </div>
+            <div>
+              <span class="text-slate-500 block">Stock Inicial:</span>
+              <span class="font-bold text-slate-200 font-mono">
+                {{ productForm.controls.stock.value }} u.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Barra de Navegación Inferior del Wizard -->
+    <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+      <div>
+        @if (currentStep() > 1) {
+          <p-button
+            label="Atrás"
+            icon="pi pi-arrow-left"
+            [text]="true"
+            severity="secondary"
+            (onClick)="prevStep()"
+            [disabled]="isSaving()"
+          />
+        }
+      </div>
+
+      <div class="flex items-center gap-2">
+        <p-button
+          label="Cancelar"
+          [text]="true"
+          severity="secondary"
+          (onClick)="closeWizard()"
+          [disabled]="isSaving()"
+        />
+
+        @if (currentStep() < totalSteps) {
+          <p-button
+            label="Siguiente"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="nextStep()"
+          />
+        } @else {
+          <p-button
+            label="Guardar Producto"
+            icon="pi pi-check"
+            [loading]="isSaving()"
+            [disabled]="productForm.invalid || isSaving()"
+            (onClick)="saveProduct()"
+          />
+        }
+      </div>
+    </div>
+  </form>
+</p-dialog>
+
+<!-- Modal Amigable Post-Guardado ("¿Deseas registrar otro producto?") -->
+<p-dialog
+  [(visible)]="isSuccessModalVisible"
+  [modal]="true"
+  [closable]="false"
+  [draggable]="false"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+>
+  <div class="p-4 text-center space-y-4">
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+      <i class="pi pi-check text-2xl"></i>
+    </div>
+
+    <div class="space-y-1">
+      <h3 class="text-lg font-bold text-white">¡Producto Guardado!</h3>
+      <p class="text-sm text-slate-400">
+        <span class="text-indigo-300 font-medium">"{{ createdProductName() }}"</span> fue registrado exitosamente en el catálogo.
+      </p>
+    </div>
+
+    <p class="text-xs text-slate-400 pt-2 border-t border-slate-800">
+      ¿Deseas registrar otro producto ahora?
+    </p>
+
+    <div class="flex items-center justify-center gap-2.5 pt-2">
+      <p-button
+        label="Finalizar y Salir"
+        [text]="true"
+        severity="secondary"
+        (onClick)="onFinishWizard()"
+      />
+      <p-button
+        label="Registrar Otro"
+        icon="pi pi-plus"
+        (onClick)="onRegisterAnother()"
+      />
+    </div>
+  </div>
+</p-dialog>
+

@@ -1,0 +1,250 @@
+<!-- Feedback Toast y Diálogo de Confirmación Global del Módulo -->
+<p-toast position="top-right" />
+<p-confirmdialog />
+
+<div class="space-y-6">
+  <!-- Encabezado y Toolbar de Acciones -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+        <i class="pi pi-tag text-indigo-400 text-xl"></i>
+        <span>Marcas</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">
+        Administración y configuración de marcas asociadas a los productos del catálogo
+      </p>
+    </div>
+
+    <!-- Buscador y Botón de Creación -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <p-iconfield class="w-full sm:w-64">
+        <p-inputicon styleClass="pi pi-search text-slate-400" />
+        <input
+          pInputText
+          type="text"
+          [value]="searchTerm()"
+          (input)="onSearchChange($event)"
+          placeholder="Buscar por nombre..."
+          class="w-full"
+        />
+      </p-iconfield>
+
+      <p-button
+        label="Nueva Marca"
+        icon="pi pi-plus"
+        (onClick)="openNewBrandDialog()"
+      />
+    </div>
+  </div>
+
+  <!-- Estado de Carga con Skeleton Screens (Regla Optimus UI #8) -->
+  @if (isLoading()) {
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800/80">
+        <p-skeleton width="14rem" height="1.75rem" />
+        <p-skeleton width="8rem" height="1.75rem" />
+      </div>
+
+      @for (item of [1, 2, 3, 4, 5]; track item) {
+        <div class="flex items-center justify-between gap-4 py-3 border-b border-slate-800/40">
+          <div class="flex items-center gap-3.5">
+            <p-skeleton shape="circle" size="2.5rem" />
+            <div class="space-y-1.5">
+              <p-skeleton width="10rem" height="1.25rem" />
+              <p-skeleton width="6rem" height="0.875rem" />
+            </div>
+          </div>
+          <p-skeleton width="6rem" height="1.5rem" />
+          <p-skeleton width="3.5rem" height="1.5rem" />
+          <div class="flex items-center gap-2">
+            <p-skeleton shape="circle" size="2rem" />
+            <p-skeleton shape="circle" size="2rem" />
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Tabla de Marcas con Optimus UI Table -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <p-table
+        [value]="filteredBrands()"
+        [paginator]="filteredBrands().length > 10"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 20, 50]"
+        tableStyleClass="w-full"
+      >
+        <ng-template #header>
+          <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider bg-slate-950/40">
+            <th class="py-3.5 px-4 text-left font-semibold">Marca</th>
+            <th class="py-3.5 px-4 text-center font-semibold">Cant. Productos</th>
+            <th class="py-3.5 px-4 text-center font-semibold">Estado</th>
+            <th class="py-3.5 px-4 text-right font-semibold">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-brand>
+          <tr class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
+            <!-- Columna 1: Marca con Logo / Avatar -->
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                @if (brand.logo_url) {
+                  <img
+                    [src]="brand.logo_url"
+                    [alt]="brand.name"
+                    class="w-10 h-10 rounded-xl object-contain bg-slate-800/80 p-1 border border-slate-700/60 shrink-0"
+                  />
+                } @else {
+                  <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                    <i class="pi pi-tag text-base"></i>
+                  </div>
+                }
+                <div>
+                  <span class="block font-medium text-white text-sm">{{ brand.name }}</span>
+                  <span class="block text-xs text-slate-500 font-mono">/{{ brand.slug }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Columna 2: Cantidad de Productos -->
+            <td class="py-3 px-4 text-center">
+              <p-tag
+                [value]="brand.product_count + (brand.product_count === 1 ? ' producto' : ' productos')"
+                [severity]="brand.product_count > 0 ? 'info' : 'secondary'"
+                styleClass="font-mono text-xs"
+              />
+            </td>
+
+            <!-- Columna 3: Toggle Interactivo de Activa -->
+            <td class="py-3 px-4 text-center">
+              <p-toggleswitch
+                [(ngModel)]="brand.is_active"
+                (onChange)="onToggleActive(brand, $event)"
+                [disabled]="updatingStatusId() === brand.id"
+              />
+            </td>
+
+            <!-- Columna 4: Acciones (Editar / Eliminar) -->
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <p-button
+                  icon="pi pi-pencil"
+                  [text]="true"
+                  severity="secondary"
+                  (onClick)="openEditBrandDialog(brand)"
+                  title="Editar marca"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  [text]="true"
+                  severity="danger"
+                  (onClick)="confirmDelete(brand)"
+                  title="Eliminar marca"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4" class="py-12 text-center text-slate-400">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <i class="pi pi-inbox text-3xl text-slate-600"></i>
+                <p class="text-sm">No se encontraron marcas registradas.</p>
+                @if (searchTerm()) {
+                  <p class="text-xs text-slate-500">Prueba ajustando el término de búsqueda.</p>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+</div>
+
+<!-- Modal Centrado para Creación / Edición de Marcas -->
+<p-dialog
+  [(visible)]="isDialogVisible"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [style]="{ width: '92vw', maxWidth: '480px' }"
+  [header]="isEditMode() ? 'Editar Marca' : 'Nueva Marca'"
+>
+  <form [formGroup]="brandForm" (ngSubmit)="saveBrand()" class="space-y-5 pt-2">
+    <!-- Campo Nombre -->
+    <div class="space-y-1.5">
+      <label for="name" class="block text-sm font-medium text-slate-300">
+        Nombre de la Marca <span class="text-rose-400">*</span>
+      </label>
+      <input
+        id="name"
+        pInputText
+        formControlName="name"
+        placeholder="Ej: Arcor, Molinos Río de la Plata, EcoTanti..."
+        class="w-full"
+      />
+      @if (brandForm.get('name')?.invalid && brandForm.get('name')?.touched) {
+        <p class="text-rose-400 text-xs mt-1">El nombre es obligatorio (mínimo 2 caracteres).</p>
+      }
+    </div>
+
+    <!-- Campo Logo URL con previsualización en vivo -->
+    <div class="space-y-1.5">
+      <label for="logo_url" class="block text-sm font-medium text-slate-300">
+        URL del Logo (Opcional)
+      </label>
+      <input
+        id="logo_url"
+        pInputText
+        formControlName="logo_url"
+        placeholder="https://ejemplo.com/logos/marca.png"
+        class="w-full"
+      />
+      <p class="text-xs text-slate-500">
+        Enlace web a la imagen o logo oficial de la marca.
+      </p>
+
+      @if (brandForm.get('logo_url')?.value?.trim()) {
+        <div class="p-3 mt-2 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center gap-3">
+          <span class="text-xs text-slate-400 font-medium">Previsualización:</span>
+          <img
+            [src]="brandForm.get('logo_url')?.value?.trim()"
+            alt="Previsualización"
+            class="w-10 h-10 object-contain rounded-lg bg-slate-900 border border-slate-800 p-1"
+          />
+        </div>
+      }
+    </div>
+
+    <!-- Toggle de Marca Activa -->
+    <div class="flex items-center justify-between p-3.5 bg-slate-950/40 rounded-xl border border-slate-800/80">
+      <div>
+        <span class="block text-sm font-medium text-slate-200">Marca Activa</span>
+        <span class="block text-xs text-slate-400">
+          Determina si los productos de esta marca se mostrarán en la tienda.
+        </span>
+      </div>
+      <p-toggleswitch formControlName="is_active" />
+    </div>
+
+    <!-- Botones de Acción del Modal -->
+    <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800">
+      <p-button
+        label="Cancelar"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeDialog()"
+        [disabled]="isSaving()"
+      />
+      <p-button
+        [label]="isEditMode() ? 'Actualizar Marca' : 'Guardar Marca'"
+        icon="pi pi-check"
+        type="submit"
+        [loading]="isSaving()"
+        [disabled]="brandForm.invalid || isSaving()"
+      />
+    </div>
+  </form>
+</p-dialog>
