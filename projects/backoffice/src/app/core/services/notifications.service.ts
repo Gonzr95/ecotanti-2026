@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { MessageService } from '@openng/optimus-ui/api';
-import { Order, OrderWithDetails } from '@ecotanti/shared-catalog';
+import { Order, OrderWithDetails, OrdersService } from '@ecotanti/shared-catalog';
 
 export type NotificationType = 'order' | 'inventory' | 'user' | 'system';
 
@@ -20,11 +20,21 @@ export interface AppNotification {
 })
 export class NotificationsService {
   private readonly messageService = inject(MessageService);
+  private readonly ordersService = inject(OrdersService, { optional: true });
 
   /**
    * Colección reactiva de notificaciones en memoria
    */
   readonly notifications = signal<AppNotification[]>([]);
+
+  /**
+   * Estado reactivo del permiso de notificaciones en el navegador / PWA
+   */
+  readonly permissionStatus = signal<NotificationPermission>(
+    typeof window !== 'undefined' && 'Notification' in window
+      ? Notification.permission
+      : 'denied'
+  );
 
   /**
    * Contador de notificaciones no leídas
@@ -45,10 +55,44 @@ export class NotificationsService {
    */
   readonly isSoundEnabled = signal<boolean>(true);
 
+  private isRealtimeSubscribed = false;
+  private unsubscribeRealtime?: () => void;
+
+  constructor() {
+    this.initRealtimeOrderSubscription();
+  }
+
+  /**
+   * Inicializa la suscripción global de Supabase Realtime para capturar nuevos pedidos
+   * sin importar en qué pantalla o ruta del Backoffice se encuentre el usuario.
+   */
+  private initRealtimeOrderSubscription(): void {
+    if (this.isRealtimeSubscribed || !this.ordersService) return;
+    this.isRealtimeSubscribed = true;
+
+    try {
+      this.unsubscribeRealtime = this.ordersService.subscribeToOrders((payload) => {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          this.notifyNewOrder(payload.new);
+        }
+      });
+    } catch (err) {
+      console.warn('[NotificationsService] Error suscribiendo a órdenes en tiempo real:', err);
+    }
+  }
+
   /**
    * Notifica el ingreso de una nueva orden en tiempo real
    */
   notifyNewOrder(order: Partial<Order> | OrderWithDetails | Order): void {
+    if (!order || !order.id) return;
+
+    // Deduplicación para evitar registrar dos veces el mismo pedido en ráfaga
+    const alreadyExists = this.notifications().some(
+      (n) => n.type === 'order' && (n.data as any)?.id === order.id
+    );
+    if (alreadyExists) return;
+
     const orderNumber = order.order_number || `#${order.id}`;
     const amount = Number(order.total_amount || 0).toLocaleString('es-AR', {
       style: 'currency',
@@ -83,8 +127,8 @@ export class NotificationsService {
       this.playNotificationSound();
     }
 
-    // 4. Notificación del sistema (PWA / Navegador)
-    this.showSystemNotification(notif.title, notif.message, notif.link);
+    // 4. Notificación del sistema (Barra de estado PWA / Navegador)
+    void this.showSystemNotification(notif.title, notif.message, notif.link);
   }
 
   /**
@@ -111,7 +155,7 @@ export class NotificationsService {
       this.playNotificationSound();
     }
 
-    this.showSystemNotification(notif.title, notif.message, notif.link);
+    void this.showSystemNotification(notif.title, notif.message, notif.link);
   }
 
   /**
@@ -140,7 +184,7 @@ export class NotificationsService {
   }
 
   /**
-   * Reproduce un chime sonoro agradable y sutil mediante Web Audio API sintético
+   * Reproduce un chime sonoro sintético agradable mediante Web Audio API
    */
   playNotificationSound(): void {
     try {
@@ -174,44 +218,116 @@ export class NotificationsService {
       osc2.start(now + 0.12);
       osc2.stop(now + 0.5);
     } catch {
-      // Si el navegador bloquea audio antes de la primera interacción del usuario, ignorar silenciosamente
+      // Ignorar silenciosamente si las políticas de autoplay bloquean el audio antes de interacción
     }
   }
 
   /**
-   * Solicita permisos de notificación al navegador o PWA
+   * Solicita permisos de notificación al navegador o PWA a través de una acción del usuario (click)
    */
   async requestPermission(): Promise<NotificationPermission> {
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      return Notification.requestPermission();
+      try {
+        const permission = await Notification.requestPermission();
+        this.permissionStatus.set(permission);
+
+        if (permission === 'granted') {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Notificaciones Habilitadas',
+            detail: 'Este dispositivo recibirá alertas de nuevas ventas en tiempo real.',
+            life: 4000,
+          });
+
+          // Notificación de prueba inmediata para validar en la barra de tareas / barra de estado
+          await this.showSystemNotification(
+            '¡Alertas de Ventas Activas!',
+            'Notificaciones configuradas correctamente en este dispositivo.'
+          );
+        }
+        return permission;
+      } catch (err) {
+        console.error('[NotificationsService] Error solicitando permisos de notificación:', err);
+      }
     }
     return 'denied';
   }
 
   /**
-   * Muestra una notificación nativa del sistema si el permiso fue concedido
+   * Envía una notificación de prueba manual para verificar el comportamiento en el dispositivo
    */
-  private showSystemNotification(title: string, body: string, link?: string): void {
-    try {
-      if (
-        typeof window !== 'undefined' &&
-        'Notification' in window &&
-        Notification.permission === 'granted'
-      ) {
-        const notif = new Notification(title, {
-          body,
-          icon: '/favicon.ico',
-        });
+  async sendTestNotification(): Promise<void> {
+    const testNotif: AppNotification = {
+      id: `test-${Date.now()}`,
+      type: 'system',
+      title: '🔔 Alerta de Prueba EcoTanti',
+      message: '¡Tu dispositivo está recibiendo alertas correctamente!',
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
 
-        if (link) {
-          notif.onclick = () => {
-            window.focus();
-            window.location.href = link;
-          };
+    this.notifications.update((prev) => [testNotif, ...prev.slice(0, 49)]);
+
+    this.messageService.add({
+      severity: 'info',
+      summary: testNotif.title,
+      detail: testNotif.message,
+      life: 4000,
+    });
+
+    if (this.isSoundEnabled()) {
+      this.playNotificationSound();
+    }
+
+    await this.showSystemNotification(testNotif.title, testNotif.message);
+  }
+
+  /**
+   * Muestra una notificación nativa del sistema si el permiso fue concedido.
+   * En dispositivos móviles (Android / Chrome PWA), el constructor new Notification() está prohibido
+   * y lanza 'Illegal constructor'; se requiere ServiceWorkerRegistration.showNotification().
+   */
+  private async showSystemNotification(title: string, body: string, link?: string): Promise<void> {
+    try {
+      if (typeof window === 'undefined' || !('Notification' in window)) {
+        return;
+      }
+
+      if (Notification.permission !== 'granted') {
+        return;
+      }
+
+      const options: NotificationOptions = {
+        body,
+        icon: '/icons/icon-192x192.png',
+        badge: '/favicon.ico',
+        tag: `order-${Date.now()}`,
+        data: { link: link || '/pedidos' },
+      };
+
+      // 1. Android / PWA: Intentar mostrar a través del Service Worker registration
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration && 'showNotification' in registration) {
+            await registration.showNotification(title, options);
+            return;
+          }
+        } catch (swErr) {
+          console.warn('[NotificationsService] ServiceWorker showNotification falló:', swErr);
         }
       }
-    } catch {
-      // Ignorar restricciones en entornos sin soporte
+
+      // 2. Desktop Fallback: new Notification (para navegadores de escritorio estándar)
+      const notif = new Notification(title, options);
+      if (link) {
+        notif.onclick = () => {
+          window.focus();
+          window.location.href = link;
+        };
+      }
+    } catch (err) {
+      console.warn('[NotificationsService] Error mostrando notificación del sistema:', err);
     }
   }
 }
