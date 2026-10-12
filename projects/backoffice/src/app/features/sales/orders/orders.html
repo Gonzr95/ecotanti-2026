@@ -1,0 +1,111 @@
+<p-toast position="top-right" />
+
+<div class="space-y-6">
+  <!-- Cabecera de Página con Título y Métricas -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+          <i class="pi pi-shopping-bag text-emerald-400 text-xl"></i>
+          Gestión de Pedidos
+        </h1>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Realtime Activo
+        </span>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">
+        Supervisa ventas, gestiona despachos y sincroniza estados operativos y de cobro en tiempo real.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <p-button
+        icon="pi pi-refresh"
+        label="Actualizar"
+        size="small"
+        severity="secondary"
+        [loading]="isLoading()"
+        (onClick)="loadOrders()"
+      />
+    </div>
+  </div>
+
+  <!-- Tarjetas de Métricas Rápidas -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+    <!-- Total Pedidos -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+      <div class="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center shrink-0">
+        <i class="pi pi-receipt text-slate-300 text-base"></i>
+      </div>
+      <div>
+        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Pedidos</span>
+        <span class="text-lg font-bold text-white font-mono leading-none">{{ totalOrders() }}</span>
+      </div>
+    </div>
+
+    <!-- Pendientes -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+        <i class="pi pi-clock text-amber-400 text-base"></i>
+      </div>
+      <div>
+        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Nuevos / Pendientes</span>
+        <span class="text-lg font-bold text-amber-400 font-mono leading-none">{{ pendingOrders() }}</span>
+      </div>
+    </div>
+
+    <!-- En Preparación -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+      <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+        <i class="pi pi-box text-blue-400 text-base"></i>
+      </div>
+      <div>
+        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">En Preparación</span>
+        <span class="text-lg font-bold text-blue-400 font-mono leading-none">{{ preparingOrders() }}</span>
+      </div>
+    </div>
+
+    <!-- Cobros Pendientes -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+      <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+        <i class="pi pi-credit-card text-rose-400 text-base"></i>
+      </div>
+      <div>
+        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Cobro Pendiente</span>
+        <span class="text-lg font-bold text-rose-400 font-mono leading-none">{{ pendingPaymentOrders() }}</span>
+      </div>
+    </div>
+
+    <!-- Recaudación Acreditada -->
+    <div class="col-span-2 lg:col-span-1 bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 shadow-lg">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+        <i class="pi pi-wallet text-emerald-400 text-base"></i>
+      </div>
+      <div>
+        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Cobrado Total</span>
+        <span class="text-lg font-bold text-emerald-400 font-mono leading-none">${{ totalRevenue() | number:'1.0-0' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Pedidos Dedicada -->
+  <app-orders-table
+    [orders]="orders()"
+    [isLoading]="isLoading()"
+    (statusChange)="handleStatusChange($event)"
+    (paymentStatusChange)="handlePaymentStatusChange($event)"
+    (orderSelected)="onOrderSelected($event)"
+  />
+
+  <!-- Drawer Deslizable de Detalle Completo -->
+  <app-order-detail-drawer
+    [(visible)]="isDrawerOpen"
+    [order]="selectedOrder()"
+    [isUpdating]="isUpdating()"
+    (statusChange)="handleStatusChange($event)"
+    (paymentStatusChange)="handlePaymentStatusChange($event)"
+    (trackingUpdate)="handleTrackingUpdate($event)"
+  />
+</div>
+

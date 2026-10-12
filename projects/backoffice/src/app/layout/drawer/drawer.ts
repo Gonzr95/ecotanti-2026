@@ -5,6 +5,7 @@ import { Button } from '@openng/optimus-ui/button';
 import { AuthService } from '@ecotanti/shared-auth';
 
 export interface DrawerSections {
+  ventas: boolean;
   catalogo: boolean;
   favoritos: boolean;
   usuarios: boolean;
@@ -13,7 +14,6 @@ export interface DrawerSections {
 
 @Component({
   selector: 'app-drawer',
-  standalone: true,
   imports: [DrawerModule, Button, RouterLink, RouterLinkActive],
   templateUrl: './drawer.html',
 })
@@ -43,6 +43,7 @@ export class DrawerComponent {
    * Estado fuertemente tipado de acordeones del menú lateral
    */
   readonly openSections = signal<DrawerSections>({
+    ventas: true,
     catalogo: true,
     favoritos: false,
     usuarios: false,

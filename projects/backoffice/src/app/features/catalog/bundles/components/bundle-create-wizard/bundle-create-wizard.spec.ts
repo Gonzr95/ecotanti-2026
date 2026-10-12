@@ -121,8 +121,6 @@ describe('BundleCreateWizardComponent', () => {
     expect(component.canAdvanceStep(1)).toBe(false);
 
     component.bundleForm.controls.name.setValue('Combo Pareja');
-    component.onNameBlur();
-    expect(component.bundleForm.controls.slug.value).toBe('combo-pareja');
     expect(component.canAdvanceStep(1)).toBe(true);
   });
 
@@ -229,10 +227,48 @@ describe('BundleCreateWizardComponent', () => {
     expect(component.images().length).toBe(2);
   });
 
-  it('should save the complete bundle and emit bundleCreated', async () => {
-    // Paso 1
+  it('should support concurrent multiple file upload in Step 4 respecting MAX_IMAGES', async () => {
+    component.currentStep.set(4);
+    const file1 = new File(['f1'], 'c1.png', { type: 'image/png' });
+    const file2 = new File(['f2'], 'c2.png', { type: 'image/png' });
+    const mockEvent = {
+      target: {
+        files: [file1, file2],
+        value: 'dummy',
+      },
+    } as unknown as Event;
+
+    await component.onFileSelected(mockEvent);
+
+    expect(bundlesServiceMock.uploadBundleImage).toHaveBeenCalledTimes(2);
+    expect(component.images().length).toBe(2);
+    expect(component.images()).toEqual([
+      'https://example.com/uploaded.jpg',
+      'https://example.com/uploaded.jpg',
+    ]);
+  });
+
+  it('should validate and manage dateRange in Step 5', () => {
+    component.currentStep.set(5);
+
+    // Sin fechas: válido (vigencia indefinida)
+    component.dateRange.set(null);
+    expect(component.canAdvanceStep(5)).toBe(true);
+
+    // Con rango válido: fecha fin >= fecha inicio
+    const fromDate = new Date('2026-10-15T10:00:00Z');
+    const untilDate = new Date('2026-10-20T10:00:00Z');
+    component.dateRange.set([fromDate, untilDate]);
+    expect(component.canAdvanceStep(5)).toBe(true);
+
+    // Con rango invertido: inválido
+    component.dateRange.set([untilDate, fromDate]);
+    expect(component.canAdvanceStep(5)).toBe(false);
+  });
+
+  it('should save the complete bundle and emit bundleCreated with automated slug and ISO dateRange', async () => {
+    // Paso 1: Solo definimos el nombre, el slug debe autogenerarse
     component.bundleForm.controls.name.setValue('Combo Pareja');
-    component.bundleForm.controls.slug.setValue('combo-pareja');
 
     // Paso 2
     component.selectedProductIdToAdd.set(1);
@@ -246,6 +282,10 @@ describe('BundleCreateWizardComponent', () => {
     // Paso 4
     component.images.set(['https://example.com/combo.jpg']);
 
+    // Paso 5: Rango de fechas
+    const fromDate = new Date('2026-11-01T10:00:00.000Z');
+    const untilDate = new Date('2026-11-10T22:00:00.000Z');
+    component.dateRange.set([fromDate, untilDate]);
     component.currentStep.set(5);
 
     let emittedBundle: BundleWithItems | undefined;
@@ -259,6 +299,8 @@ describe('BundleCreateWizardComponent', () => {
         slug: 'combo-pareja',
         total_price: 6000,
         images: ['https://example.com/combo.jpg'],
+        valid_from: fromDate.toISOString(),
+        valid_until: untilDate.toISOString(),
       }),
       expect.arrayContaining([
         expect.objectContaining({

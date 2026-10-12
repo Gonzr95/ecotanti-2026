@@ -1,0 +1,287 @@
+<div class="space-y-4">
+  <!-- Barra de Búsqueda Global y Filtros de Cabecera -->
+  <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-3.5 rounded-2xl">
+    <div class="relative flex-1 max-w-md">
+      <i class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+      <input
+        pInputText
+        type="text"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+        placeholder="Buscar por #orden, cliente, email, teléfono, ciudad..."
+        class="w-full pl-9 text-xs font-medium"
+      />
+    </div>
+
+    <!-- Filtros de cabecera rápidos -->
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Filtro Estado del Pedido -->
+      <p-select
+        [options]="[{ value: 'all', label: 'Todos los estados' }, ...statusOptions]"
+        [ngModel]="selectedStatusFilter()"
+        (ngModelChange)="selectedStatusFilter.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Estado"
+        class="text-xs"
+        styleClass="text-xs"
+      />
+
+      <!-- Filtro Pago -->
+      <p-select
+        [options]="[{ value: 'all', label: 'Todos los pagos' }, ...paymentStatusOptions]"
+        [ngModel]="selectedPaymentFilter()"
+        (ngModelChange)="selectedPaymentFilter.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Pago"
+        class="text-xs"
+        styleClass="text-xs"
+      />
+
+      <!-- Filtro Envío -->
+      <p-select
+        [options]="[{ value: 'all', label: 'Todos los envíos' }, ...shippingOptions]"
+        [ngModel]="selectedShippingFilter()"
+        (ngModelChange)="selectedShippingFilter.set($event)"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Envío"
+        class="text-xs"
+        styleClass="text-xs"
+      />
+
+      @if (searchQuery() || selectedStatusFilter() !== 'all' || selectedPaymentFilter() !== 'all' || selectedShippingFilter() !== 'all') {
+        <p-button
+          icon="pi pi-filter-slash"
+          [text]="true"
+          size="small"
+          severity="secondary"
+          (onClick)="clearAllFilters()"
+          title="Limpiar filtros"
+        />
+      }
+    </div>
+  </div>
+
+  <!-- Contenedor de la Tabla -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+    <p-table
+      [value]="filteredOrders()"
+      [paginator]="true"
+      [rows]="rows()"
+      [rowsPerPageOptions]="rowsPerPageOptions"
+      [first]="first()"
+      (onPage)="first.set($event.first); rows.set($event.rows)"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} pedidos"
+      [loading]="isLoading()"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-sm"
+    >
+      <!-- Cabecera de la Tabla -->
+      <ng-template #header>
+        <tr class="bg-slate-950/70 text-slate-300 text-xs border-b border-slate-800">
+          <th class="py-3 px-4 font-bold text-left">Pedido</th>
+          <th class="py-3 px-4 font-bold text-left">Cliente</th>
+          <th class="py-3 px-4 font-bold text-left">Método de Envío</th>
+          <th class="py-3 px-4 font-bold text-left">Cobro / Pago</th>
+          <th class="py-3 px-4 font-bold text-left">Total</th>
+          <th class="py-3 px-4 font-bold text-left">Estado Operativo</th>
+          <th class="py-3 px-4 font-bold text-center w-20">Detalle</th>
+        </tr>
+      </ng-template>
+
+      <!-- Filas de Datos -->
+      <ng-template #body let-order>
+        @let paymentMeta = getPaymentStatusMeta(order.payment_status);
+        <tr
+          class="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors text-xs text-slate-200 cursor-pointer"
+          (click)="orderSelected.emit(order)"
+        >
+          <!-- Pedido (Número y Fecha) -->
+          <td class="py-3 px-4">
+            <div class="space-y-0.5">
+              <span class="font-mono font-bold text-indigo-400 hover:text-indigo-300 transition-colors block">
+                {{ order.order_number }}
+              </span>
+              <span class="text-[11px] text-slate-400 block font-mono">
+                {{ order.created_at | date:'dd/MM/yy HH:mm' }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Cliente -->
+          <td class="py-3 px-4">
+            <div class="space-y-0.5 max-w-[180px]">
+              <span class="font-semibold text-white truncate block">
+                {{ order.delivery?.recipient_name || 'Sin nombre' }}
+              </span>
+              <span class="text-[11px] text-slate-400 truncate block font-mono">
+                {{ order.delivery?.recipient_phone || order.delivery?.recipient_email || '-' }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Método de Envío -->
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-800 border border-slate-700 text-slate-300">
+              <i
+                class="text-[10px]"
+                [class.pi-building]="order.delivery?.shipping_method === 'pickup'"
+                [class.pi-car]="order.delivery?.shipping_method === 'local_delivery'"
+                [class.pi-send]="order.delivery?.shipping_method === 'national_shipping'"
+                [class.pi]="true"
+              ></i>
+              {{ getShippingLabel(order.delivery?.shipping_method) }}
+            </span>
+          </td>
+
+          <!-- Cobro / Pago -->
+          <td class="py-3 px-4" (click)="$event.stopPropagation()">
+            <div class="flex items-center gap-1.5">
+              <p-select
+                [options]="paymentStatusOptions"
+                [ngModel]="order.payment_status"
+                (ngModelChange)="onPaymentStatusChange(order, $event)"
+                optionLabel="label"
+                optionValue="value"
+                class="text-[11px]"
+                styleClass="text-[11px] !py-1 !px-2"
+              >
+                <ng-template #selectedItem let-selected>
+                  @if (selected) {
+                    <span class="inline-flex items-center gap-1 font-semibold text-[11px]" [class]="paymentMeta.badgeClass">
+                      {{ selected.label }}
+                    </span>
+                  }
+                </ng-template>
+              </p-select>
+            </div>
+          </td>
+
+          <!-- Monto Total -->
+          <td class="py-3 px-4">
+            <div class="space-y-0.5">
+              <span class="font-mono font-bold text-white block">
+                ${{ order.total_amount | number:'1.0-2' }}
+              </span>
+              <span class="text-[11px] text-slate-400 block">
+                {{ order.items ? order.items.length : 0 }} ítem(s)
+              </span>
+            </div>
+          </td>
+
+          <!-- Estado Operativo (Dropdown interactivo en fila) -->
+          <td class="py-3 px-4" (click)="$event.stopPropagation()">
+            <div class="min-w-[140px]">
+              <p-select
+                [options]="statusOptions"
+                [ngModel]="order.status"
+                (ngModelChange)="onStatusDropdownChange(order, $event)"
+                optionLabel="label"
+                optionValue="value"
+                class="text-xs w-full"
+                styleClass="text-xs w-full !py-1"
+              >
+                <ng-template #selectedItem let-selected>
+                  @if (selected) {
+                    <span class="inline-flex items-center gap-1.5 font-bold text-xs">
+                      <i [class]="selected.icon + ' text-[10px]'"></i>
+                      <span>{{ selected.label }}</span>
+                    </span>
+                  }
+                </ng-template>
+                <ng-template #item let-opt>
+                  <div class="flex items-center gap-2 py-0.5">
+                    <i [class]="opt.icon + ' text-xs'"></i>
+                    <span class="text-xs font-medium">{{ opt.label }}</span>
+                  </div>
+                </ng-template>
+              </p-select>
+            </div>
+          </td>
+
+          <!-- Acciones (Ver Detalle) -->
+          <td class="py-3 px-4 text-center">
+            <p-button
+              icon="pi pi-eye"
+              [rounded]="true"
+              [text]="true"
+              severity="secondary"
+              size="small"
+              title="Ver detalle del pedido"
+              (onClick)="orderSelected.emit(order); $event.stopPropagation()"
+            />
+          </td>
+        </tr>
+      </ng-template>
+
+      <!-- Estado Vacío -->
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="py-12 text-center text-slate-500 text-xs">
+            <div class="space-y-2">
+              <i class="pi pi-inbox text-3xl text-slate-600"></i>
+              <p>No se encontraron pedidos registrados con los criterios seleccionados.</p>
+              @if (searchQuery() || selectedStatusFilter() !== 'all' || selectedPaymentFilter() !== 'all') {
+                <p-button
+                  label="Limpiar filtros"
+                  [text]="true"
+                  size="small"
+                  (onClick)="clearAllFilters()"
+                />
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Modal de Confirmación de Cancelación de Seguridad -->
+<p-dialog
+  [visible]="isCancelDialogOpen()"
+  (visibleChange)="isCancelDialogOpen.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  header="Confirmar Cancelación de Pedido"
+  [style]="{ width: '90vw', maxWidth: '440px' }"
+  styleClass="rounded-2xl bg-slate-900 border border-slate-800 text-slate-100"
+>
+  <div class="py-2 space-y-3">
+    <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 space-y-1">
+      <div class="font-bold flex items-center gap-1.5">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>Atención: Cambio a estado Cancelado</span>
+      </div>
+      <p>
+        ¿Estás seguro de que deseas marcar la orden
+        <strong class="text-white">{{ orderPendingCancellation()?.order_number }}</strong> como
+        <strong>Cancelada</strong>?
+      </p>
+    </div>
+    <p class="text-[11px] text-slate-400">
+      Este cambio notificará la anulación del pedido en el sistema.
+    </p>
+  </div>
+
+  <ng-template #footer>
+    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+      <p-button
+        label="Volver"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeCancelDialog()"
+      />
+      <p-button
+        label="Sí, Cancelar Pedido"
+        icon="pi pi-times-circle"
+        severity="danger"
+        (onClick)="confirmCancelOrder()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>

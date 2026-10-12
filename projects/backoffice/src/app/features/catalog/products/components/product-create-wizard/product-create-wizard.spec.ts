@@ -134,15 +134,38 @@ describe('ProductCreateWizardComponent', () => {
     expect(component.calculatedGrossProfit()).toBe(400);
     // Margen = (400 / 1000) * 100 = 40%
     expect(component.calculatedMarginPercent()).toBe(40);
+  });
 
-    // Precio de oferta inválido (mayor o igual al base)
-    component.productForm.controls.sale_price.setValue(1200);
-    expect(component.canAdvanceStep(2)).toBe(false);
+  it('should support uploading multiple photos simultaneously up to 3 photos limit', async () => {
+    component.currentStep.set(4);
+    expect(component.images().length).toBe(0);
 
-    // Precio de oferta válido (menor al base)
-    component.productForm.controls.sale_price.setValue(800);
-    expect(component.canAdvanceStep(2)).toBe(true);
-    expect(component.calculatedSaleProfit()).toBe(200); // 800 - 600 = 200
+    const file1 = new File(['dummy1'], 'foto1.jpg', { type: 'image/jpeg' });
+    const file2 = new File(['dummy2'], 'foto2.jpg', { type: 'image/jpeg' });
+    const file3 = new File(['dummy3'], 'foto3.jpg', { type: 'image/jpeg' });
+
+    productsServiceMock.uploadProductImage
+      .mockResolvedValueOnce('https://example.com/foto1.jpg')
+      .mockResolvedValueOnce('https://example.com/foto2.jpg')
+      .mockResolvedValueOnce('https://example.com/foto3.jpg');
+
+    const fakeEvent = {
+      target: {
+        files: [file1, file2, file3],
+        value: 'dummy',
+      },
+    } as unknown as Event;
+
+    await component.onFileSelected(fakeEvent);
+
+    expect(productsServiceMock.uploadProductImage).toHaveBeenCalledTimes(3);
+    expect(component.images().length).toBe(3);
+    expect(component.images()).toEqual([
+      'https://example.com/foto1.jpg',
+      'https://example.com/foto2.jpg',
+      'https://example.com/foto3.jpg',
+    ]);
+    expect(component.canAdvanceStep(4)).toBe(true);
   });
 
   it('should validate Step 3 category and support inline category creation', async () => {

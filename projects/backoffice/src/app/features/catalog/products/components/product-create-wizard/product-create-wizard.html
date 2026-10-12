@@ -36,25 +36,6 @@
         [showValue]="false"
         styleClass="h-1.5 rounded-full bg-slate-800"
       />
-
-      <!-- Indicadores de Pasos Clickeables -->
-      <div class="flex items-center justify-between gap-1 pt-1">
-        @for (stepNum of [1, 2, 3, 4, 5]; track stepNum) {
-          <button
-            type="button"
-            (click)="goToStep(stepNum)"
-            class="flex-1 py-1 text-center rounded-md text-xs font-medium transition-all"
-            [class.bg-indigo-600]="currentStep() === stepNum"
-            [class.text-white]="currentStep() === stepNum"
-            [class.bg-indigo-950_40]="currentStep() > stepNum"
-            [class.text-indigo-400]="currentStep() > stepNum"
-            [class.text-slate-500]="currentStep() < stepNum"
-            [class.hover_bg-slate-800]="currentStep() !== stepNum"
-          >
-            Paso {{ stepNum }}
-          </button>
-        }
-      </div>
     </div>
   </ng-template>
 
@@ -162,29 +143,6 @@
           </div>
         </div>
 
-        <!-- Precio de Oferta -->
-        <div class="space-y-1.5">
-          <label for="sale_price" class="block text-sm font-medium text-slate-300">
-            Precio de Oferta (Opcional)
-          </label>
-          <p-inputnumber
-            id="sale_price"
-            formControlName="sale_price"
-            mode="currency"
-            currency="ARS"
-            locale="es-AR"
-            placeholder="Dejar vacío si no está en descuento"
-            styleClass="w-full"
-          />
-          @if (
-            productForm.controls.sale_price.value &&
-            productForm.controls.base_price.value &&
-            productForm.controls.sale_price.value >= productForm.controls.base_price.value
-          ) {
-            <p class="text-rose-400 text-xs">El precio de oferta debe ser menor al precio base.</p>
-          }
-        </div>
-
         <!-- Tarjeta de Ayuda Visual: Rentabilidad en Tiempo Real -->
         @if (calculatedGrossProfit() !== null) {
           <div class="p-4 rounded-xl bg-slate-950/70 border border-indigo-500/30 space-y-2.5">
@@ -206,19 +164,17 @@
 
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span class="text-xs text-slate-400 block">Ganancia Bruta Regular:</span>
+                <span class="text-xs text-slate-400 block">Ganancia Bruta:</span>
                 <span class="font-bold text-white text-base">
                   $ {{ calculatedGrossProfit() | number:'1.2-2' }}
                 </span>
               </div>
-              @if (calculatedSaleProfit() !== null) {
-                <div>
-                  <span class="text-xs text-slate-400 block">Ganancia en Oferta:</span>
-                  <span class="font-bold text-amber-400 text-base">
-                    $ {{ calculatedSaleProfit() | number:'1.2-2' }} ({{ calculatedSaleMarginPercent() | number:'1.1-1' }}%)
-                  </span>
-                </div>
-              }
+              <div>
+                <span class="text-xs text-slate-400 block">Margen sobre Venta:</span>
+                <span class="font-bold text-emerald-400 text-base">
+                  {{ calculatedMarginPercent() | number:'1.1-1' }}%
+                </span>
+              </div>
             </div>
           </div>
         }
@@ -370,6 +326,7 @@
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 (change)="onFileSelected($event)"
                 class="hidden"
                 [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"

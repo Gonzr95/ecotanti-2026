@@ -65,3 +65,15 @@ export interface CreateOfferItemDto {
   is_active?: boolean;
 }
 
+export interface OfferItemDraft {
+  type: 'product' | 'bundle';
+  product_id?: number | null;
+  bundle_id?: number | null;
+  name: string;
+  image?: string | null;
+  regular_price: number;
+  offer_price: number;
+  calculated_discount: number;
+  is_active: boolean;
+}
+

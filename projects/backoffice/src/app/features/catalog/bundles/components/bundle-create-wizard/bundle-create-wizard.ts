@@ -17,6 +17,7 @@ import { InputNumber } from '@openng/optimus-ui/inputnumber';
 import { Textarea } from '@openng/optimus-ui/textarea';
 import { ToggleSwitch } from '@openng/optimus-ui/toggleswitch';
 import { Button } from '@openng/optimus-ui/button';
+import { DatePicker } from '@openng/optimus-ui/datepicker';
 import { Toast } from '@openng/optimus-ui/toast';
 import { MessageService } from '@openng/optimus-ui/api';
 import {
@@ -45,6 +46,7 @@ import {
     Textarea,
     ToggleSwitch,
     Button,
+    DatePicker,
     Toast,
   ],
   providers: [MessageService],
@@ -114,18 +116,20 @@ export class BundleCreateWizardComponent implements OnInit {
   readonly discountPercentage = signal<number | null>(null);
 
   /**
+   * Rango de fechas de vigencia de la promoción ([desde, hasta] o null)
+   */
+  readonly dateRange = signal<Date[] | null>(null);
+
+  /**
    * Formulario reactivo del combo
    */
   readonly bundleForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
-    slug: [''],
     description: [''],
     is_active: [true],
     pricing_mode: ['manual' as 'manual' | 'percentage', [Validators.required]],
     manual_price: [null as number | null],
     discount_percentage: [null as number | null],
-    valid_from: [null as string | null],
-    valid_until: [null as string | null],
   });
 
   /**
@@ -228,17 +232,6 @@ export class BundleCreateWizardComponent implements OnInit {
       });
     } finally {
       this.isLoadingProducts.set(false);
-    }
-  }
-
-  /**
-   * Autogenera el slug si el usuario no ingresó uno manual
-   */
-  onNameBlur(): void {
-    const currentName = this.bundleForm.controls.name.value;
-    const currentSlug = this.bundleForm.controls.slug.value;
-    if (currentName && !currentSlug) {
-      this.bundleForm.controls.slug.setValue(slugify(currentName));
     }
   }
 
@@ -392,22 +385,60 @@ export class BundleCreateWizardComponent implements OnInit {
       return;
     }
 
-    const file = input.files[0];
-    try {
-      this.isUploadingImage.set(true);
-      const publicUrl = await this.bundlesService.uploadBundleImage(file);
-      this.images.update((prev) => [...prev, publicUrl]);
+    const availableSlots = this.MAX_IMAGES - this.images().length;
+    const selectedFiles = Array.from(input.files);
+    const filesToUpload = selectedFiles.slice(0, availableSlots);
+
+    if (selectedFiles.length > availableSlots) {
       this.messageService.add({
-        severity: 'success',
-        summary: 'Imagen cargada',
-        detail: 'La imagen del combo se subió correctamente.',
+        severity: 'info',
+        summary: 'Límite de fotos',
+        detail: `Se seleccionaron ${selectedFiles.length} fotos, pero solo se cargarán ${availableSlots} para no superar el límite de ${this.MAX_IMAGES}.`,
       });
-    } catch (error) {
-      console.error('Error al subir imagen de combo:', error);
+    }
+
+    this.isUploadingImage.set(true);
+
+    try {
+      const uploadPromises = filesToUpload.map((file) =>
+        this.bundlesService.uploadBundleImage(file)
+      );
+      const results = await Promise.allSettled(uploadPromises);
+
+      const successfulUrls: string[] = [];
+      let failCount = 0;
+
+      for (const res of results) {
+        if (res.status === 'fulfilled') {
+          successfulUrls.push(res.value);
+        } else {
+          failCount++;
+          console.error('Error al subir una de las fotos de combo:', res.reason);
+        }
+      }
+
+      if (successfulUrls.length > 0) {
+        this.images.update((prev) => [...prev, ...successfulUrls]);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Fotos agregadas',
+          detail: `Se subieron ${successfulUrls.length} foto(s) con éxito (${this.images().length} de ${this.MAX_IMAGES}).`,
+        });
+      }
+
+      if (failCount > 0) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error parcial',
+          detail: `No se pudieron subir ${failCount} foto(s).`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error general al subir imágenes de combo:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Error de subida',
-        detail: 'No se pudo subir la imagen al almacenamiento.',
+        detail: error?.message || 'No se pudieron procesar las imágenes.',
       });
     } finally {
       this.isUploadingImage.set(false);
@@ -439,10 +470,9 @@ export class BundleCreateWizardComponent implements OnInit {
       return this.images().length >= 1 && this.images().length <= this.MAX_IMAGES;
     }
     if (step === 5) {
-      const from = this.bundleForm.controls.valid_from.value;
-      const until = this.bundleForm.controls.valid_until.value;
-      if (from && until) {
-        return new Date(until) >= new Date(from);
+      const range = this.dateRange();
+      if (range && range.length === 2 && range[0] && range[1]) {
+        return range[1] >= range[0];
       }
       return true;
     }
@@ -520,15 +550,19 @@ export class BundleCreateWizardComponent implements OnInit {
     const finalPrice = this.finalComboPrice();
     const discountPct = this.calculatedEquivalentDiscount();
 
+    const range = this.dateRange();
+    const validFrom = range?.[0] ? range[0].toISOString() : null;
+    const validUntil = range?.[1] ? range[1].toISOString() : null;
+
     const bundleDto: CreateBundleDto = {
       name: formValues.name!.trim(),
-      slug: formValues.slug?.trim() || slugify(formValues.name!),
+      slug: slugify(formValues.name!.trim()),
       description: formValues.description?.trim() || null,
       total_price: finalPrice,
       discount_percentage: discountPct > 0 ? discountPct : null,
       images: this.images(),
-      valid_from: formValues.valid_from ? new Date(formValues.valid_from).toISOString() : null,
-      valid_until: formValues.valid_until ? new Date(formValues.valid_until).toISOString() : null,
+      valid_from: validFrom,
+      valid_until: validUntil,
       is_active: formValues.is_active ?? true,
     };
 
@@ -568,15 +602,13 @@ export class BundleCreateWizardComponent implements OnInit {
     this.currentStep.set(1);
     this.bundleForm.reset({
       name: '',
-      slug: '',
       description: '',
       is_active: true,
       pricing_mode: 'manual',
       manual_price: null,
       discount_percentage: null,
-      valid_from: null,
-      valid_until: null,
     });
+    this.dateRange.set(null);
     this.pricingMode.set('manual');
     this.manualPrice.set(null);
     this.discountPercentage.set(null);

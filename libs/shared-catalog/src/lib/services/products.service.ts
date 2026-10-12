@@ -35,7 +35,6 @@ export class ProductsService {
         slug,
         description: dto.description?.trim() || null,
         base_price: dto.base_price,
-        sale_price: dto.sale_price != null ? dto.sale_price : null,
         cost_price: dto.cost_price,
         stock: dto.stock ?? 0,
         category_id: dto.category_id,
@@ -44,6 +43,8 @@ export class ProductsService {
         is_active: dto.is_active ?? true,
         is_highlight: dto.is_highlight ?? false,
         is_on_sale: dto.is_on_sale ?? false,
+        applies_discount: dto.applies_discount ?? true,
+        points_required: dto.points_required ?? null,
       })
       .select()
       .single();

@@ -8,3 +8,5 @@ export * from './lib/services/brands.service';
 export * from './lib/services/categories.service';
 export * from './lib/services/products.service';
 export * from './lib/services/bundles.service';
+export * from './lib/services/offers.service';
+export * from './lib/services/orders.service';
