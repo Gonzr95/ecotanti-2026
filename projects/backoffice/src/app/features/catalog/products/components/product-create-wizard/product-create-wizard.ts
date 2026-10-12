@@ -73,6 +73,7 @@ export class ProductCreateWizardComponent implements OnInit {
   // Estados del Wizard
   readonly currentStep = signal<number>(1);
   readonly totalSteps = 5;
+  readonly MAX_IMAGES = 3;
   readonly isSaving = signal<boolean>(false);
   readonly isUploadingImage = signal<boolean>(false);
   readonly isCreatingCategory = signal<boolean>(false);
@@ -97,7 +98,6 @@ export class ProductCreateWizardComponent implements OnInit {
     // Paso 2: Precios
     base_price: [null as number | null, [Validators.required, Validators.min(0.01)]],
     cost_price: [null as number | null, [Validators.required, Validators.min(0.01)]],
-    sale_price: [null as number | null],
 
     // Paso 3: Stock y Categoría
     stock: [0, [Validators.required, Validators.min(0)]],
@@ -142,24 +142,6 @@ export class ProductCreateWizardComponent implements OnInit {
     const cost = Number(this.productForm.controls.cost_price.value ?? 0);
     if (base > 0 && cost > 0) {
       return ((base - cost) / base) * 100;
-    }
-    return null;
-  });
-
-  readonly calculatedSaleProfit = computed(() => {
-    const sale = Number(this.productForm.controls.sale_price.value ?? 0);
-    const cost = Number(this.productForm.controls.cost_price.value ?? 0);
-    if (sale > 0 && cost > 0) {
-      return sale - cost;
-    }
-    return null;
-  });
-
-  readonly calculatedSaleMarginPercent = computed(() => {
-    const sale = Number(this.productForm.controls.sale_price.value ?? 0);
-    const cost = Number(this.productForm.controls.cost_price.value ?? 0);
-    if (sale > 0 && cost > 0) {
-      return ((sale - cost) / sale) * 100;
     }
     return null;
   });
@@ -215,13 +197,7 @@ export class ProductCreateWizardComponent implements OnInit {
     if (step === 2) {
       const baseValid = this.productForm.controls.base_price.valid ?? false;
       const costValid = this.productForm.controls.cost_price.valid ?? false;
-      const saleVal = this.productForm.controls.sale_price.value;
-      const baseVal = this.productForm.controls.base_price.value;
-      if (!baseValid || !costValid) return false;
-      if (saleVal != null && saleVal > 0 && baseVal != null && saleVal >= baseVal) {
-        return false;
-      }
-      return true;
+      return baseValid && costValid;
     }
     if (step === 3) {
       return (
@@ -229,7 +205,10 @@ export class ProductCreateWizardComponent implements OnInit {
         (this.productForm.controls.stock.valid ?? false)
       );
     }
-    // Paso 4 e imágenes son opcionales para avanzar
+    if (step === 4) {
+      // Al menos 1 foto requerida para portada, máximo 3
+      return this.images().length >= 1 && this.images().length <= this.MAX_IMAGES;
+    }
     return true;
   }
 
@@ -237,11 +216,19 @@ export class ProductCreateWizardComponent implements OnInit {
     const step = this.currentStep();
     if (!this.canAdvanceStep(step)) {
       this.markStepControlsAsTouched(step);
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Campos requeridos',
-        detail: 'Por favor completa los campos obligatorios antes de avanzar.',
-      });
+      if (step === 4 && this.images().length === 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Foto requerida',
+          detail: 'Debes cargar al menos 1 foto para el producto (con 1 es suficiente, hasta 3 fotos).',
+        });
+      } else {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Campos requeridos',
+          detail: 'Por favor completa los campos obligatorios antes de avanzar.',
+        });
+      }
       return;
     }
 
@@ -279,7 +266,6 @@ export class ProductCreateWizardComponent implements OnInit {
     } else if (step === 2) {
       this.productForm.controls.base_price.markAsTouched();
       this.productForm.controls.cost_price.markAsTouched();
-      this.productForm.controls.sale_price.markAsTouched();
     } else if (step === 3) {
       this.productForm.controls.category_id.markAsTouched();
       this.productForm.controls.stock.markAsTouched();
@@ -288,6 +274,15 @@ export class ProductCreateWizardComponent implements OnInit {
 
   // Manejo de Imágenes (Paso 4)
   addImageUrl(): void {
+    if (this.images().length >= this.MAX_IMAGES) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Límite de imágenes',
+        detail: `Solo puedes subir hasta ${this.MAX_IMAGES} fotos por producto.`,
+      });
+      return;
+    }
+
     const url = this.imageUrlInput().trim();
     if (!url) return;
     this.images.update((prev) => [...prev, url]);
@@ -311,23 +306,70 @@ export class ProductCreateWizardComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
-    const file = input.files[0];
+    if (this.images().length >= this.MAX_IMAGES) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Límite de imágenes',
+        detail: `Solo puedes subir hasta ${this.MAX_IMAGES} fotos por producto.`,
+      });
+      input.value = '';
+      return;
+    }
+
+    const availableSlots = this.MAX_IMAGES - this.images().length;
+    const selectedFiles = Array.from(input.files);
+    const filesToUpload = selectedFiles.slice(0, availableSlots);
+
+    if (selectedFiles.length > availableSlots) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Límite de fotos',
+        detail: `Se seleccionaron ${selectedFiles.length} fotos, pero solo se cargarán ${availableSlots} para no superar el límite de ${this.MAX_IMAGES}.`,
+      });
+    }
+
     this.isUploadingImage.set(true);
 
     try {
-      const publicUrl = await this.productsService.uploadProductImage(file);
-      this.images.update((prev) => [...prev, publicUrl]);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Imagen subida',
-        detail: 'La imagen fue cargada correctamente.',
-      });
-    } catch (error) {
-      console.error('Error al subir imagen:', error);
+      const uploadPromises = filesToUpload.map((file) =>
+        this.productsService.uploadProductImage(file)
+      );
+      const results = await Promise.allSettled(uploadPromises);
+
+      const successfulUrls: string[] = [];
+      let failCount = 0;
+
+      for (const res of results) {
+        if (res.status === 'fulfilled') {
+          successfulUrls.push(res.value);
+        } else {
+          failCount++;
+          console.error('Error al subir una de las fotos:', res.reason);
+        }
+      }
+
+      if (successfulUrls.length > 0) {
+        this.images.update((prev) => [...prev, ...successfulUrls]);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Fotos agregadas',
+          detail: `Se subieron ${successfulUrls.length} foto(s) con éxito (${this.images().length} de ${this.MAX_IMAGES}).`,
+        });
+      }
+
+      if (failCount > 0) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error parcial',
+          detail: `No se pudieron subir ${failCount} foto(s).`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error general al subir imágenes:', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'No se pudo subir la imagen. Puedes ingresar una URL directa.',
+        detail: error?.message || 'No se pudieron procesar las imágenes.',
       });
     } finally {
       this.isUploadingImage.set(false);
@@ -397,7 +439,6 @@ export class ProductCreateWizardComponent implements OnInit {
         slug: '', // Autogenerado en segundo plano
         description: formValues.description?.trim() || null,
         base_price: Number(formValues.base_price),
-        sale_price: formValues.sale_price != null ? Number(formValues.sale_price) : null,
         cost_price: Number(formValues.cost_price),
         stock: Number(formValues.stock ?? 0),
         category_id: formValues.category_id!,
@@ -467,7 +508,6 @@ export class ProductCreateWizardComponent implements OnInit {
       description: '',
       base_price: null,
       cost_price: null,
-      sale_price: null,
       stock: 0,
       category_id: null,
       is_active: true,

@@ -1,0 +1,669 @@
+<p-toast position="top-right" />
+
+<!-- Diálogo Principal del Wizard de Combos -->
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [dismissableMask]="false"
+  [draggable]="false"
+  [style]="{ width: '94vw', maxWidth: '750px' }"
+  (onHide)="closeWizard()"
+>
+  <!-- Encabezado con Progreso (Sin pastillas redundantes de Paso 1, Paso 2...) -->
+  <ng-template #header>
+    <div class="w-full pr-6 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <i class="pi pi-gift text-sm"></i>
+          </span>
+          <div>
+            <h2 class="text-lg font-bold text-white tracking-tight">Nuevo Combo de Productos</h2>
+            <p class="text-xs text-slate-400 font-medium">
+              Paso {{ currentStep() }} de {{ totalSteps }}: <span class="text-indigo-300">{{ currentStepTitle() }}</span>
+            </p>
+          </div>
+        </div>
+
+        <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+          {{ progressPercentage() }}%
+        </span>
+      </div>
+
+      <!-- Barra de Progreso Optimus UI -->
+      <p-progressbar
+        [value]="progressPercentage()"
+        [showValue]="false"
+        styleClass="h-1.5 rounded-full bg-slate-800"
+      />
+    </div>
+  </ng-template>
+
+  <!-- Contenedor del Formulario y Pasos -->
+  <form [formGroup]="bundleForm" class="py-2 space-y-6">
+    @switch (currentStep()) {
+
+      <!-- ============================================================ -->
+      <!-- PASO 1: INFORMACIÓN BÁSICA                                   -->
+      <!-- ============================================================ -->
+      @case (1) {
+        <div class="space-y-4">
+          <!-- Nombre del Combo -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="bundle-name" class="text-xs font-semibold text-slate-300">
+                Nombre del Combo <span class="text-rose-400">*</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Estado:</span>
+                <p-toggleswitch formControlName="is_active" />
+                <span class="text-xs font-medium" [class.text-indigo-400]="bundleForm.controls.is_active.value" [class.text-slate-500]="!bundleForm.controls.is_active.value">
+                  {{ bundleForm.controls.is_active.value ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+            </div>
+            <input
+              pInputText
+              id="bundle-name"
+              type="text"
+              formControlName="name"
+              placeholder="Ej: Combo Pareja (2 Baldes + 2 Gaseosas)"
+              class="w-full text-sm"
+              [class.ng-invalid]="bundleForm.controls.name.invalid && bundleForm.controls.name.touched"
+            />
+            @if (bundleForm.controls.name.invalid && bundleForm.controls.name.touched) {
+              <p class="text-[11px] text-rose-400 flex items-center gap-1">
+                <i class="pi pi-exclamation-circle text-[10px]"></i>
+                El nombre es obligatorio (mínimo 3 caracteres).
+              </p>
+            }
+          </div>
+
+          <!-- Descripción Opcional -->
+          <div class="space-y-1.5">
+            <label for="bundle-desc" class="text-xs font-semibold text-slate-300">
+              Descripción del Combo (Opcional)
+            </label>
+            <textarea
+              pTextarea
+              id="bundle-desc"
+              formControlName="description"
+              rows="3"
+              placeholder="Detalla qué incluye el combo o condiciones especiales de la promoción..."
+              class="w-full text-sm resize-none"
+            ></textarea>
+          </div>
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 2: COMPOSICIÓN DEL COMBO (PRODUCTOS DEL INVENTARIO)     -->
+      <!-- ============================================================ -->
+      @case (2) {
+        <div class="space-y-4">
+          <!-- Tarjeta de Selección -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <i class="pi pi-box"></i>
+                Composición del Combo (Productos del Inventario) <span class="text-rose-400">*</span>
+              </span>
+              <span class="text-xs font-medium text-slate-400">
+                {{ comboItems().length }} producto(s) en el combo
+              </span>
+            </div>
+
+            <!-- Selector y botón Agregar -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div class="flex-1">
+                <p-select
+                  [options]="activeProducts()"
+                  [ngModel]="selectedProductIdToAdd()"
+                  (ngModelChange)="selectedProductIdToAdd.set($event)"
+                  [ngModelOptions]="{ standalone: true }"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="-- Seleccionar producto del inventario --"
+                  class="w-full text-sm"
+                  [filter]="true"
+                  filterPlaceholder="Buscar por nombre..."
+                >
+                  <ng-template #item let-prod>
+                    <div class="flex items-center justify-between w-full py-1">
+                      <div class="flex items-center gap-2">
+                        @if (prod.images && prod.images.length > 0) {
+                          <img [src]="prod.images[0]" alt="" class="w-6 h-6 object-cover rounded" />
+                        } @else {
+                          <span class="w-6 h-6 bg-slate-800 rounded flex items-center justify-center text-[10px] text-slate-400">
+                            <i class="pi pi-image"></i>
+                          </span>
+                        }
+                        <span class="text-sm font-medium">{{ prod.name }}</span>
+                      </div>
+                      <span class="text-xs font-mono text-indigo-400 font-semibold ml-2">
+                        ${{ prod.base_price | number:'1.0-2' }}
+                      </span>
+                    </div>
+                  </ng-template>
+                </p-select>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
+                  <span class="text-xs text-slate-400">Cant:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    [value]="quantityToAdd()"
+                    (input)="quantityToAdd.set($any($event.target).valueAsNumber || 1)"
+                    class="w-12 bg-transparent text-center font-bold text-sm text-white focus:outline-none"
+                  />
+                </div>
+
+                <p-button
+                  label="Agregar"
+                  icon="pi pi-plus"
+                  (onClick)="addProductToCombo()"
+                  [disabled]="!selectedProductIdToAdd()"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de Productos Agregados -->
+          @if (comboItems().length === 0) {
+            <div class="p-6 text-center rounded-xl border border-dashed border-slate-800 space-y-2">
+              <i class="pi pi-shopping-cart text-2xl text-slate-600"></i>
+              <p class="text-xs text-slate-400">
+                Aún no has agregado productos al combo. Selecciona productos arriba para definir la composición.
+              </p>
+            </div>
+          } @else {
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+                  <tr>
+                    <th class="py-2.5 px-3">Producto</th>
+                    <th class="py-2.5 px-3 text-right">Precio Unit.</th>
+                    <th class="py-2.5 px-3 text-center">Cantidad</th>
+                    <th class="py-2.5 px-3 text-right">Subtotal</th>
+                    <th class="py-2.5 px-2 text-center w-10"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80 bg-slate-900/60">
+                  @for (item of comboItems(); track item.product.id; let idx = $index) {
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                      <td class="py-2.5 px-3">
+                        <div class="flex items-center gap-2.5">
+                          @if (item.product.images && item.product.images.length > 0) {
+                            <img [src]="item.product.images[0]" alt="" class="w-8 h-8 rounded-lg object-cover border border-slate-800" />
+                          } @else {
+                            <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500">
+                              <i class="pi pi-image text-xs"></i>
+                            </div>
+                          }
+                          <span class="font-medium text-slate-200">{{ item.product.name }}</span>
+                        </div>
+                      </td>
+                      <td class="py-2.5 px-3 text-right font-mono text-slate-300">
+                        ${{ item.product.base_price | number:'1.0-2' }}
+                      </td>
+                      <td class="py-2.5 px-3 text-center">
+                        <div class="inline-flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg p-0.5">
+                          <button
+                            type="button"
+                            (click)="decrementItemQuantity(idx)"
+                            class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                          >
+                            <i class="pi pi-minus text-[10px]"></i>
+                          </button>
+                          <span class="w-7 text-center font-bold text-xs text-white">
+                            {{ item.quantity }}
+                          </span>
+                          <button
+                            type="button"
+                            (click)="incrementItemQuantity(idx)"
+                            class="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                          >
+                            <i class="pi pi-plus text-[10px]"></i>
+                          </button>
+                        </div>
+                      </td>
+                      <td class="py-2.5 px-3 text-right font-mono font-semibold text-indigo-300">
+                        ${{ (item.product.base_price * item.quantity) | number:'1.0-2' }}
+                      </td>
+                      <td class="py-2.5 px-2 text-center">
+                        <button
+                          type="button"
+                          (click)="removeItem(idx)"
+                          class="text-slate-500 hover:text-rose-400 transition-colors p-1"
+                          title="Quitar producto"
+                        >
+                          <i class="pi pi-trash text-xs"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot class="bg-slate-950/80 font-bold border-t border-slate-800 text-slate-300">
+                  <tr>
+                    <td colspan="3" class="py-2.5 px-3 text-right text-xs">Total Regular de Lista:</td>
+                    <td class="py-2.5 px-3 text-right font-mono text-indigo-300 font-bold text-sm">
+                      ${{ totalRegularPrice() | number:'1.0-2' }}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 3: FIJACIÓN DEL PRECIO PROMOCIONAL                      -->
+      <!-- ============================================================ -->
+      @case (3) {
+        <div class="space-y-4">
+          <!-- Card Superior con Valor Regular y Conmutador de Modo -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 block">
+                Fijación del Precio Promocional <span class="text-rose-400">*</span>
+              </span>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Valor regular acumulado de lista: <strong class="text-white font-mono">${{ totalRegularPrice() | number:'1.0-2' }}</strong>
+              </p>
+            </div>
+
+            <!-- Botones Switch de Modo de Precio -->
+            <div class="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-0.5 self-start sm:self-auto">
+              <button
+                type="button"
+                (click)="setPricingMode('manual')"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                [class.bg-indigo-600]="pricingMode() === 'manual'"
+                [class.text-white]="pricingMode() === 'manual'"
+                [class.text-slate-400]="pricingMode() !== 'manual'"
+              >
+                Precio Manual ($)
+              </button>
+              <button
+                type="button"
+                (click)="setPricingMode('percentage')"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                [class.bg-indigo-600]="pricingMode() === 'percentage'"
+                [class.text-white]="pricingMode() === 'percentage'"
+                [class.text-slate-400]="pricingMode() !== 'percentage'"
+              >
+                Porcentaje (%)
+              </button>
+            </div>
+          </div>
+
+          <!-- Campos de Precio y Resumen en vivo -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Columna Izquierda: Input de Precio o Porcentaje -->
+            <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+              @if (pricingMode() === 'manual') {
+                <div class="space-y-1.5">
+                  <label for="manual-price" class="text-xs font-semibold text-slate-300">
+                    Precio Especial del Combo ($ ARS) <span class="text-rose-400">*</span>
+                  </label>
+                  <p-inputnumber
+                    id="manual-price"
+                    [ngModel]="manualPrice()"
+                    (ngModelChange)="setManualPrice($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                    mode="currency"
+                    currency="ARS"
+                    locale="es-AR"
+                    [min]="0"
+                    placeholder="$ 0.00"
+                    class="w-full text-base font-bold"
+                  />
+                  <p class="text-[11px] text-slate-500">
+                    Monto exacto que pagará el cliente al adquirir este combo promocional.
+                  </p>
+                </div>
+              } @else {
+                <div class="space-y-1.5">
+                  <label for="pct-discount" class="text-xs font-semibold text-slate-300">
+                    Porcentaje de Descuento (%) <span class="text-rose-400">*</span>
+                  </label>
+                  <p-inputnumber
+                    id="pct-discount"
+                    [ngModel]="discountPercentage()"
+                    (ngModelChange)="setDiscountPercentage($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                    suffix=" %"
+                    [min]="0"
+                    [max]="100"
+                    placeholder="Ej: 15 %"
+                    class="w-full text-base font-bold"
+                  />
+                  <p class="text-[11px] text-slate-500">
+                    Porcentaje de rebaja aplicado sobre el valor total regular de lista.
+                  </p>
+                </div>
+              }
+            </div>
+
+            <!-- Columna Derecha: Tarjeta de Resumen Financiero -->
+            <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3 flex flex-col justify-center">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400">Precio Final del Combo:</span>
+                <span class="text-lg font-bold font-mono text-indigo-300">
+                  ${{ finalComboPrice() | number:'1.0-2' }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400">Ahorro para el cliente:</span>
+                <span class="font-semibold font-mono text-indigo-400">
+                  ${{ calculatedSavings() | number:'1.0-2' }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
+                <span class="text-slate-400">Descuento equivalente:</span>
+                <span class="font-bold px-2 py-0.5 rounded text-xs" [class.bg-indigo-500_20]="calculatedEquivalentDiscount() > 0" [class.text-indigo-300]="calculatedEquivalentDiscount() > 0" [class.text-slate-500]="calculatedEquivalentDiscount() <= 0">
+                  {{ calculatedEquivalentDiscount() }}% OFF
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advertencia si no hay ahorro -->
+          @if (pricingWarning()) {
+            <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+              <i class="pi pi-info-circle text-amber-400 text-sm"></i>
+              <span>{{ pricingWarning() }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 4: IMÁGENES DEL COMBO                                   -->
+      <!-- ============================================================ -->
+      @case (4) {
+        <div class="space-y-4">
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <i class="pi pi-images"></i>
+                Imágenes del Combo <span class="text-rose-400">*</span>
+              </span>
+              <span
+                class="text-xs font-mono px-2 py-0.5 rounded-full"
+                [class.bg-indigo-500_10]="images().length >= 1 && images().length <= MAX_IMAGES"
+                [class.text-indigo-400]="images().length >= 1 && images().length <= MAX_IMAGES"
+                [class.bg-slate-800]="images().length === 0"
+                [class.text-slate-400]="images().length === 0"
+              >
+                {{ images().length }} / {{ MAX_IMAGES }} fotos
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-400">
+              Puedes cargar hasta 3 fotos (con 1 es suficiente para la portada principal).
+            </p>
+
+            <!-- Input URL Externa -->
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                pInputText
+                type="text"
+                [value]="imageUrlInput()"
+                (input)="imageUrlInput.set($any($event.target).value)"
+                placeholder="https://ejemplo.com/combo-promocion.jpg"
+                class="flex-1 text-sm"
+                [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"
+              />
+              <p-button
+                label="Agregar URL"
+                icon="pi pi-link"
+                [text]="true"
+                severity="secondary"
+                (onClick)="addImageUrl()"
+                [disabled]="!imageUrlInput().trim() || images().length >= MAX_IMAGES || isUploadingImage()"
+              />
+            </div>
+
+            <!-- Dos botones: Cargar foto y Tomar foto -->
+            <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-3">
+              <!-- Botón 1: Cargar foto -->
+              <label
+                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20"
+                [class.opacity-50]="images().length >= MAX_IMAGES || isUploadingImage()"
+                [class.pointer-events-none]="images().length >= MAX_IMAGES || isUploadingImage()"
+              >
+                <i class="pi pi-upload"></i>
+                <span>Cargar foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  (change)="onFileSelected($event)"
+                  class="hidden"
+                  [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"
+                />
+              </label>
+
+              <!-- Botón 2: Tomar foto -->
+              <label
+                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20"
+                [class.opacity-50]="images().length >= MAX_IMAGES || isUploadingImage()"
+                [class.pointer-events-none]="images().length >= MAX_IMAGES || isUploadingImage()"
+              >
+                <i class="pi pi-camera"></i>
+                <span>Tomar foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  (change)="onFileSelected($event)"
+                  class="hidden"
+                  [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"
+                />
+              </label>
+
+              @if (isUploadingImage()) {
+                <span class="text-xs text-indigo-400 flex items-center gap-1.5 font-medium ml-auto">
+                  <i class="pi pi-spin pi-spinner"></i> Subiendo imagen a /media/bundles...
+                </span>
+              }
+
+              @if (images().length >= MAX_IMAGES) {
+                <span class="text-xs text-amber-400 flex items-center gap-1 font-medium ml-auto">
+                  <i class="pi pi-info-circle"></i> Máximo alcanzado (3 fotos)
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Galería de Fotos Cargadas -->
+          @if (images().length > 0) {
+            <div class="space-y-2">
+              <span class="text-xs font-medium text-slate-400 block">
+                Fotos del combo ({{ images().length }} de {{ MAX_IMAGES }}): La primera es la portada principal.
+              </span>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                @for (imgUrl of images(); track imgUrl; let idx = $index) {
+                  <div class="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-1.5 space-y-1.5">
+                    <div class="aspect-square rounded-lg overflow-hidden relative">
+                      <img [src]="imgUrl" alt="Combo" class="w-full h-full object-contain" />
+                      @if (idx === 0) {
+                        <span class="absolute top-1.5 left-1.5 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                          Portada
+                        </span>
+                      }
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                      @if (idx !== 0) {
+                        <button
+                          type="button"
+                          (click)="setCoverImage(idx)"
+                          class="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
+                        >
+                          Hacer Portada
+                        </button>
+                      } @else {
+                        <span class="text-[11px] text-slate-500 italic">Principal</span>
+                      }
+                      <button
+                        type="button"
+                        (click)="removeImage(idx)"
+                        class="text-slate-500 hover:text-rose-400 transition-colors p-1"
+                        title="Eliminar foto"
+                      >
+                        <i class="pi pi-trash text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="p-6 text-center rounded-xl border border-dashed border-slate-800 space-y-1">
+              <i class="pi pi-image text-2xl text-slate-600"></i>
+              <p class="text-xs text-slate-400">
+                Se requiere al menos 1 foto para el combo (máximo 3).
+              </p>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 5: VIGENCIA Y CONFIRMACIÓN                              -->
+      <!-- ============================================================ -->
+      @case (5) {
+        <div class="space-y-4">
+          <!-- Rango de Vigencia -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <i class="pi pi-calendar"></i>
+                Período de Vigencia de la Promoción (Opcional)
+              </span>
+              @if (dateRange() && dateRange()!.length > 0 && dateRange()![0]) {
+                <span class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Programado
+                </span>
+              } @else {
+                <span class="text-[11px] font-medium text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-full">
+                  Indefinido
+                </span>
+              }
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="bundle-date-range" class="text-xs font-medium text-slate-300">
+                Rango de Fechas y Horarios (Desde - Hasta)
+              </label>
+              <p-datepicker
+                id="bundle-date-range"
+                [ngModel]="dateRange()"
+                (ngModelChange)="dateRange.set($event)"
+                [ngModelOptions]="{ standalone: true }"
+                selectionMode="range"
+                [showTime]="true"
+                hourFormat="24"
+                [showIcon]="true"
+                [showClear]="true"
+                dateFormat="dd/mm/yy"
+                placeholder="Selecciona período de vigencia (Desde - Hasta)"
+                styleClass="w-full text-xs"
+              />
+            </div>
+            <p class="text-[11px] text-slate-500">
+              Si se deja en blanco o se limpia, el combo estará disponible de manera indefinida mientras permanezca Activo.
+            </p>
+          </div>
+
+          <!-- Resumen Completo de Confirmación -->
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Resumen Final del Combo
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="space-y-1">
+                <p class="text-slate-400">Nombre: <strong class="text-white">{{ bundleForm.controls.name.value }}</strong></p>
+                <p class="text-slate-400">Estado: <span [class.text-indigo-400]="bundleForm.controls.is_active.value" [class.text-slate-500]="!bundleForm.controls.is_active.value" class="font-semibold">{{ bundleForm.controls.is_active.value ? 'Activo' : 'Inactivo' }}</span></p>
+                <p class="text-slate-400">Productos incluidos: <strong class="text-white">{{ comboItems().length }} ítems</strong></p>
+                <p class="text-slate-400">
+                  Vigencia:
+                  @if (dateRange() && dateRange()!.length === 2 && dateRange()![0] && dateRange()![1]) {
+                    <strong class="text-indigo-300">{{ dateRange()![0] | date:'dd/MM/yy HH:mm' }} - {{ dateRange()![1] | date:'dd/MM/yy HH:mm' }}</strong>
+                  } @else if (dateRange() && dateRange()!.length >= 1 && dateRange()![0]) {
+                    <strong class="text-indigo-300">Desde {{ dateRange()![0] | date:'dd/MM/yy HH:mm' }}</strong>
+                  } @else {
+                    <span class="text-slate-400 italic">Indefinida</span>
+                  }
+                </p>
+              </div>
+              <div class="space-y-1">
+                <p class="text-slate-400">Precio Regular de Lista: <span class="font-mono text-slate-300">${{ totalRegularPrice() | number:'1.0-2' }}</span></p>
+                <p class="text-slate-400">Precio Especial Combo: <span class="font-mono font-bold text-indigo-300">${{ finalComboPrice() | number:'1.0-2' }}</span></p>
+                <p class="text-slate-400">Ahorro para el Cliente: <span class="font-mono text-indigo-400">${{ calculatedSavings() | number:'1.0-2' }} ({{ calculatedEquivalentDiscount() }}% OFF)</span></p>
+              </div>
+            </div>
+
+            <!-- Previsualización de Fotos -->
+            @if (images().length > 0) {
+              <div class="pt-2 border-t border-slate-800/80 flex items-center gap-2">
+                <span class="text-[11px] text-slate-400">Fotos:</span>
+                @for (img of images(); track img) {
+                  <img [src]="img" alt="" class="w-7 h-7 rounded object-cover border border-slate-800" />
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </form>
+
+  <!-- Pie del Diálogo con Navegación -->
+  <ng-template #footer>
+    <div class="flex items-center justify-between w-full pt-3 border-t border-slate-800">
+      <p-button
+        label="Cancelar"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeWizard()"
+        [disabled]="isSaving()"
+      />
+
+      <div class="flex items-center gap-2">
+        @if (currentStep() > 1) {
+          <p-button
+            label="Anterior"
+            icon="pi pi-arrow-left"
+            [outlined]="true"
+            severity="secondary"
+            (onClick)="prevStep()"
+            [disabled]="isSaving()"
+          />
+        }
+
+        @if (currentStep() < totalSteps) {
+          <p-button
+            label="Siguiente"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="nextStep()"
+          />
+        } @else {
+          <p-button
+            label="Crear Combo"
+            icon="pi pi-check"
+            (onClick)="saveBundle()"
+            [loading]="isSaving()"
+          />
+        }
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+

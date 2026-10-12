@@ -20,8 +20,95 @@
     </div>
   </div>
 
-  <!-- Derecha: Cerrar Sesión Minimalista -->
-  <div class="flex items-center">
+  <!-- Derecha: Campana de Notificaciones y Cerrar Sesión Minimalista -->
+  <div class="flex items-center gap-1.5 sm:gap-2">
+    <!-- Botón de Notificaciones con Badge -->
+    <div class="relative">
+      <p-button
+        type="button"
+        icon="pi pi-bell"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        ariaLabel="Ver notificaciones"
+        styleClass="!w-10 !h-10 !text-slate-300 hover:!bg-slate-800 hover:!text-white"
+        (click)="notificationsPopover.toggle($event)"
+      />
+      @if (notificationsService.unreadCount() > 0) {
+        <span class="absolute top-1 right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-rose-600 rounded-full border-2 border-slate-900 pointer-events-none animate-pulse">
+          {{ notificationsService.unreadCount() > 9 ? '9+' : notificationsService.unreadCount() }}
+        </span>
+      }
+    </div>
+
+    <!-- Popover de Notificaciones -->
+    <p-popover #notificationsPopover styleClass="w-80 sm:w-96 p-0 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
+      <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-bell text-indigo-400 text-sm"></i>
+          <span class="text-xs font-bold text-white uppercase tracking-wider">Notificaciones</span>
+          @if (notificationsService.unreadCount() > 0) {
+            <span class="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.2 rounded-full font-bold">
+              {{ notificationsService.unreadCount() }} nuevas
+            </span>
+          }
+        </div>
+        @if (notificationsService.notifications().length > 0) {
+          <button
+            type="button"
+            (click)="notificationsService.markAllAsRead()"
+            class="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            Marcar leídas
+          </button>
+        }
+      </div>
+
+      <!-- Lista de Notificaciones -->
+      <div class="max-h-80 overflow-y-auto divide-y divide-slate-800/60">
+        @if (notificationsService.notifications().length === 0) {
+          <div class="p-6 text-center text-slate-500 text-xs">
+            <i class="pi pi-check-circle text-lg text-slate-600 mb-1 block"></i>
+            No tienes notificaciones pendientes
+          </div>
+        } @else {
+          @for (notif of notificationsService.notifications(); track notif.id) {
+            <div
+              (click)="onNotificationClick(notif, notificationsPopover)"
+              class="p-3 hover:bg-slate-800/60 transition-colors cursor-pointer flex items-start gap-2.5"
+              [class.bg-slate-950_50]="!notif.read"
+            >
+              <div
+                class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 text-xs"
+                [class.bg-emerald-500_20]="notif.type === 'order'"
+                [class.text-emerald-400]="notif.type === 'order'"
+                [class.bg-indigo-500_20]="notif.type !== 'order'"
+                [class.text-indigo-400]="notif.type !== 'order'"
+              >
+                <i [class]="notif.type === 'order' ? 'pi pi-shopping-bag' : 'pi pi-info-circle'"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-xs font-semibold text-white truncate">{{ notif.title }}</span>
+                  @if (!notif.read) {
+                    <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                  }
+                </div>
+                <p class="text-xs text-slate-300 line-clamp-1 mt-0.5">{{ notif.message }}</p>
+                <span class="text-[10px] text-slate-500 block mt-1">
+                  {{ notif.timestamp | date:'shortTime' }}
+                </span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </p-popover>
+
+    <!-- Separador vertical sutil -->
+    <div class="h-6 w-px bg-slate-800 mx-1"></div>
+
+    <!-- Botón Cerrar Sesión -->
     <p-button
       type="button"
       icon="pi pi-sign-out"
@@ -34,4 +121,3 @@
     />
   </div>
 </header>
-

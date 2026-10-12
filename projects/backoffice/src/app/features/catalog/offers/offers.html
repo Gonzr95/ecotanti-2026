@@ -1,0 +1,320 @@
+<p-toast position="top-right" />
+
+<div class="space-y-6">
+  <!-- Encabezado de la página -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+        <i class="pi pi-percentage text-indigo-400 text-xl"></i>
+        <span>Ofertas y Campañas Promocionales</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">
+        Administración de promociones especiales, colecciones con descuento y eventos de temporada
+      </p>
+    </div>
+    <div>
+      <p-button
+        label="Nueva Oferta"
+        icon="pi pi-plus"
+        (onClick)="openCreateWizard()"
+      />
+    </div>
+  </div>
+
+  <!-- Barra de Búsqueda y Filtros Rápidos -->
+  <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+    <!-- Buscador -->
+    <div class="relative flex-1 max-w-md">
+      <i class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+      <input
+        pInputText
+        type="text"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+        placeholder="Buscar oferta por nombre o condición..."
+        class="w-full pl-9 text-xs"
+      />
+    </div>
+
+    <!-- Píldoras de Filtro por Estado -->
+    <div class="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start md:self-auto">
+      <button
+        type="button"
+        (click)="statusFilter.set('all')"
+        class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+        [class.bg-indigo-600]="statusFilter() === 'all'"
+        [class.text-white]="statusFilter() === 'all'"
+        [class.text-slate-400]="statusFilter() !== 'all'"
+      >
+        Todas
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('active')"
+        class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+        [class.bg-emerald-600]="statusFilter() === 'active'"
+        [class.text-white]="statusFilter() === 'active'"
+        [class.text-slate-400]="statusFilter() !== 'active'"
+      >
+        Vigentes
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('upcoming')"
+        class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+        [class.bg-cyan-600]="statusFilter() === 'upcoming'"
+        [class.text-white]="statusFilter() === 'upcoming'"
+        [class.text-slate-400]="statusFilter() !== 'upcoming'"
+      >
+        Próximas
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('expired')"
+        class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+        [class.bg-amber-600]="statusFilter() === 'expired'"
+        [class.text-white]="statusFilter() === 'expired'"
+        [class.text-slate-400]="statusFilter() !== 'expired'"
+      >
+        Vencidas
+      </button>
+      <button
+        type="button"
+        (click)="statusFilter.set('paused')"
+        class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+        [class.bg-slate-700]="statusFilter() === 'paused'"
+        [class.text-white]="statusFilter() === 'paused'"
+        [class.text-slate-400]="statusFilter() !== 'paused'"
+      >
+        Pausadas
+      </button>
+    </div>
+  </div>
+
+  <!-- Estado de Carga -->
+  @if (isLoading()) {
+    <div class="py-16 text-center text-slate-400 space-y-2">
+      <i class="pi pi-spin pi-spinner text-2xl text-indigo-400"></i>
+      <p class="text-xs">Cargando catálogo de ofertas...</p>
+    </div>
+  } @else if (filteredOffers().length === 0) {
+    <!-- Estado Vacío -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center space-y-4">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+        <i class="pi pi-percentage text-2xl"></i>
+      </div>
+      <div class="max-w-md mx-auto space-y-1">
+        <h3 class="text-base font-semibold text-white">No se encontraron ofertas</h3>
+        <p class="text-xs text-slate-400">
+          @if (searchQuery() || statusFilter() !== 'all') {
+            No hay promociones que coincidan con los criterios seleccionados. Prueba limpiando los filtros.
+          } @else {
+            Aún no has creado ninguna oferta o campaña. Haz clic en <span class="text-indigo-400 font-medium">"Nueva Oferta"</span> para programar tu primera promoción.
+          }
+        </p>
+      </div>
+      @if (searchQuery() || statusFilter() !== 'all') {
+        <p-button
+          label="Limpiar Filtros"
+          icon="pi pi-filter-slash"
+          [text]="true"
+          size="small"
+          severity="secondary"
+          (onClick)="searchQuery.set(''); statusFilter.set('all')"
+        />
+      }
+    </div>
+  } @else {
+    <!-- Cuadrícula de Tarjetas Promocionales (Cards Responsive) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      @for (offer of filteredOffers(); track offer.id) {
+        @let status = getOfferStatus(offer);
+        <div class="rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700/80 transition-all overflow-hidden flex flex-col shadow-lg">
+          <!-- Portada con Banner y Badges Flotantes -->
+          <div class="relative aspect-video max-h-48 bg-slate-950 overflow-hidden">
+            @if (offer.image_url) {
+              <img
+                [src]="offer.image_url"
+                alt="{{ offer.name }}"
+                class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              />
+            } @else {
+              <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 to-indigo-950/30 text-slate-500">
+                <i class="pi pi-percentage text-3xl mb-1 text-slate-600"></i>
+                <span class="text-[11px] font-medium text-slate-400">Sin banner asignado</span>
+              </div>
+            }
+
+            <!-- Badge de Estado (Top-Left) -->
+            <div class="absolute top-2.5 left-2.5">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide backdrop-blur-md {{ status.badgeClass }}">
+                <i [class]="status.icon + ' text-[10px]'"></i>
+                {{ status.label }}
+              </span>
+            </div>
+
+            <!-- Descuento General % (Top-Right) -->
+            @if (offer.discount_percentage) {
+              <div class="absolute top-2.5 right-2.5">
+                <span class="bg-indigo-600/90 text-white font-mono font-bold text-xs px-2.5 py-0.5 rounded-full shadow-md backdrop-blur-md">
+                  {{ offer.discount_percentage }}% OFF
+                </span>
+              </div>
+            }
+
+            <!-- Logo / Insignia de Campaña (Bottom-Left) -->
+            @if (offer.logo_url) {
+              <div class="absolute bottom-2.5 left-2.5">
+                <img
+                  [src]="offer.logo_url"
+                  alt="Insignia"
+                  class="w-9 h-9 rounded-lg object-contain bg-slate-950/90 p-1 border border-slate-700/80 shadow-md backdrop-blur-md"
+                />
+              </div>
+            }
+          </div>
+
+          <!-- Cuerpo de la Tarjeta -->
+          <div class="p-4 space-y-3 flex-1 flex flex-col justify-between">
+            <div class="space-y-1.5">
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="text-sm font-bold text-white leading-tight line-clamp-1">
+                  {{ offer.name }}
+                </h3>
+              </div>
+
+              @if (offer.description) {
+                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                  {{ offer.description }}
+                </p>
+              }
+
+              <!-- Información de Vigencia e Ítems -->
+              <div class="pt-2 space-y-1 text-[11px]">
+                <div class="flex items-center gap-1.5 text-slate-400">
+                  <i class="pi pi-calendar text-[10px] text-indigo-400"></i>
+                  @if (offer.valid_from && offer.valid_until) {
+                    <span>{{ offer.valid_from | date:'dd/MM/yy' }} al {{ offer.valid_until | date:'dd/MM/yy' }}</span>
+                  } @else if (offer.valid_from) {
+                    <span>Desde {{ offer.valid_from | date:'dd/MM/yy' }}</span>
+                  } @else {
+                    <span class="text-slate-500 italic">Vigencia indefinida</span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-1.5 text-slate-400">
+                  <i class="pi pi-box text-[10px] text-indigo-400"></i>
+                  <span class="font-medium text-slate-300">
+                    {{ offer.items ? offer.items.length : 0 }} producto(s)/combo(s) en oferta
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones de la Tarjeta -->
+            <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <p-toggleswitch
+                  [ngModel]="offer.is_active"
+                  (ngModelChange)="toggleOfferStatus(offer, $event)"
+                  [ngModelOptions]="{ standalone: true }"
+                />
+                <span class="text-[11px] text-slate-400">
+                  {{ offer.is_active ? 'Activa' : 'Pausada' }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1">
+                <p-button
+                  label="Editar"
+                  icon="pi pi-pencil"
+                  [outlined]="true"
+                  size="small"
+                  severity="secondary"
+                  (onClick)="openEditWizard(offer)"
+                />
+                <p-button
+                  icon="pi pi-trash"
+                  [text]="true"
+                  size="small"
+                  severity="danger"
+                  (onClick)="askDeleteOffer(offer, $event)"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal Dedicado con el Asistente de Creación y Edición -->
+<app-offer-create-wizard
+  [(visible)]="isWizardVisible"
+  [offerToEdit]="selectedOfferToEdit()"
+  (offerSaved)="onOfferSaved($event)"
+/>
+
+<!-- Diálogo de Confirmación de Eliminación -->
+<p-dialog
+  [visible]="isDeleteDialogOpen()"
+  (visibleChange)="isDeleteDialogOpen.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  header="Eliminar Oferta"
+  [style]="{ width: '90vw', maxWidth: '440px' }"
+  styleClass="rounded-2xl bg-slate-900 border border-slate-800 text-slate-100"
+>
+  <div class="py-2 space-y-3">
+    @if (hasOrdersWarning()) {
+      <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 space-y-1">
+        <div class="font-bold flex items-center gap-1.5">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>No es posible eliminar esta oferta</span>
+        </div>
+        <p>
+          Esta oferta ya cuenta con compras registradas en el historial de ventas. Para no romper la integridad de auditoría, te recomendamos pausarla mediante el switch de estado.
+        </p>
+      </div>
+    } @else {
+      <p class="text-xs text-slate-300">
+        ¿Estás seguro de que deseas eliminar permanentemente la oferta
+        <strong class="text-white">"{{ offerToDelete()?.name }}"</strong> y sus productos vinculados?
+      </p>
+      <p class="text-[11px] text-slate-500">
+        Esta acción es irreversible si la promoción aún no tiene ventas asociadas.
+      </p>
+    }
+  </div>
+
+  <ng-template #footer>
+    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+      <p-button
+        label="Cancelar"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeDeleteDialog()"
+        [disabled]="isDeleting()"
+      />
+      @if (!hasOrdersWarning()) {
+        <p-button
+          label="Eliminar"
+          icon="pi pi-trash"
+          severity="danger"
+          (onClick)="executeDelete()"
+          [disabled]="isDeleting()"
+        />
+      } @else {
+        <p-button
+          label="Pausar Oferta"
+          icon="pi pi-pause"
+          severity="warn"
+          (onClick)="toggleOfferStatus(offerToDelete()!); closeDeleteDialog()"
+        />
+      }
+    </div>
+  </ng-template>
+</p-dialog>
+

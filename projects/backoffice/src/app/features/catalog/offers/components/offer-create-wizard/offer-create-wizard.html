@@ -1,0 +1,683 @@
+<p-toast position="top-right" />
+
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!isSaving()"
+  [closeOnEscape]="!isSaving()"
+  [style]="{ width: '95vw', maxWidth: '780px', maxHeight: '92vh' }"
+  styleClass="overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl text-slate-100"
+>
+  <!-- Encabezado con Stepper Integrado -->
+  <ng-template #header>
+    <div class="w-full pr-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <i class="pi pi-percentage text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white leading-tight">
+              {{ isEditMode() ? 'Editar Oferta / Campaña' : 'Nueva Oferta / Campaña' }}
+            </h3>
+            <p class="text-xs text-slate-400">
+              Paso {{ currentStep() }} de {{ totalSteps }}:
+              <span class="text-indigo-400 font-medium">{{ currentStepTitle() }}</span>
+            </p>
+          </div>
+        </div>
+
+        <span class="text-xs font-mono font-semibold text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-700/60">
+          {{ progressPercentage() }}%
+        </span>
+      </div>
+
+      <!-- Barra de progreso -->
+      <p-progressbar
+        [value]="progressPercentage()"
+        [showValue]="false"
+        styleClass="h-1.5 rounded-full bg-slate-800"
+      />
+    </div>
+  </ng-template>
+
+  <!-- Contenido Dinámico por Pasos -->
+  <form [formGroup]="offerForm" class="py-2 space-y-4">
+    @switch (currentStep()) {
+      <!-- ============================================================ -->
+      <!-- PASO 1: INFORMACIÓN BÁSICA Y BANNERS                         -->
+      <!-- ============================================================ -->
+      @case (1) {
+        <div class="space-y-4">
+          <!-- Nombre y Estado -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="offer-name" class="text-xs font-semibold text-slate-300">
+                Nombre de la Oferta / Campaña <span class="text-rose-400">*</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Estado:</span>
+                <p-toggleswitch formControlName="is_active" />
+                <span
+                  class="text-xs font-medium"
+                  [class.text-indigo-400]="offerForm.controls.is_active.value"
+                  [class.text-slate-500]="!offerForm.controls.is_active.value"
+                >
+                  {{ offerForm.controls.is_active.value ? 'Activa' : 'Pausada' }}
+                </span>
+              </div>
+            </div>
+            <input
+              pInputText
+              id="offer-name"
+              type="text"
+              formControlName="name"
+              placeholder="Ej: CyberWeek EcoTanti, 20% en Alfajores..."
+              class="w-full text-sm"
+              [class.ng-invalid]="offerForm.controls.name.invalid && offerForm.controls.name.touched"
+            />
+            @if (offerForm.controls.name.invalid && offerForm.controls.name.touched) {
+              <p class="text-[11px] text-rose-400 flex items-center gap-1">
+                <i class="pi pi-exclamation-circle text-[10px]"></i>
+                El nombre es obligatorio (mínimo 3 caracteres).
+              </p>
+            }
+          </div>
+
+          <!-- Descuento General de Campaña (Opcional) -->
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="offer-discount-pct" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <i class="pi pi-tag text-indigo-400"></i>
+                Descuento General de la Campaña (Opcional %)
+              </label>
+              <span class="text-[11px] text-slate-500">
+                Sugerencia automática para todos los ítems
+              </span>
+            </div>
+            <div class="flex items-center gap-2 max-w-xs">
+              <input
+                pInputText
+                id="offer-discount-pct"
+                type="number"
+                min="1"
+                max="100"
+                formControlName="discount_percentage"
+                placeholder="Ej: 20"
+                class="w-32 text-sm font-mono font-bold"
+              />
+              <span class="text-sm font-bold text-indigo-400">% OFF</span>
+            </div>
+            <p class="text-[11px] text-slate-400">
+              Si defines un porcentaje aquí, en el Paso 3 podrás aplicar este descuento a todos los productos agregados con un solo clic.
+            </p>
+          </div>
+
+          <!-- Descripción -->
+          <div class="space-y-1.5">
+            <label for="offer-desc" class="text-xs font-semibold text-slate-300">
+              Descripción o Condiciones (Opcional)
+            </label>
+            <textarea
+              pTextarea
+              id="offer-desc"
+              formControlName="description"
+              rows="2"
+              placeholder="Detalla las condiciones de la promoción para los clientes..."
+              class="w-full text-sm resize-none"
+            ></textarea>
+          </div>
+
+          <!-- Imagen 1: Banner Principal de Campaña (image_url) -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <i class="pi pi-image"></i>
+                Banner Principal de la Oferta (image_url)
+              </span>
+              <span class="text-[11px] text-slate-400">Formato apaisado sugerido (16:9)</span>
+            </div>
+
+            @if (bannerUrl()) {
+              <div class="relative rounded-xl overflow-hidden border border-slate-800 aspect-video max-h-44 group bg-slate-900">
+                <img [src]="bannerUrl()" alt="Banner de Oferta" class="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  (click)="removeBanner()"
+                  class="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-600 text-white p-1.5 rounded-lg text-xs shadow transition-colors"
+                  title="Quitar banner"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            } @else {
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input
+                  pInputText
+                  type="text"
+                  [value]="bannerUrlInput()"
+                  (input)="bannerUrlInput.set($any($event.target).value)"
+                  placeholder="https://ejemplo.com/banner-oferta.jpg"
+                  class="flex-1 text-xs"
+                />
+                <p-button
+                  label="Vincular URL"
+                  icon="pi pi-link"
+                  [text]="true"
+                  severity="secondary"
+                  (onClick)="setBannerUrl(bannerUrlInput())"
+                  [disabled]="!bannerUrlInput().trim()"
+                />
+              </div>
+
+              <div class="pt-1.5 border-t border-slate-800/80 flex items-center gap-3">
+                <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors">
+                  <i class="pi pi-upload"></i>
+                  <span>Subir banner</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    (change)="onBannerFileSelected($event)"
+                    class="hidden"
+                    [disabled]="isUploadingBanner()"
+                  />
+                </label>
+                @if (isUploadingBanner()) {
+                  <span class="text-xs text-indigo-400 flex items-center gap-1">
+                    <i class="pi pi-spin pi-spinner"></i> Subiendo a media/offers...
+                  </span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Imagen 2: Logo / Insignia Opcional (logo_url) -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <i class="pi pi-bookmark"></i>
+                Logo o Insignia de Campaña (logo_url - Opcional)
+              </span>
+              <span class="text-[11px] text-slate-400">Badge o ícono cuadrado</span>
+            </div>
+
+            @if (logoUrl()) {
+              <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-900 border border-slate-800">
+                <img [src]="logoUrl()" alt="Logo" class="w-12 h-12 object-contain rounded-lg border border-slate-700/60" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-slate-300 truncate font-mono">{{ logoUrl() }}</p>
+                  <span class="text-[10px] text-emerald-400">Insignia vinculada</span>
+                </div>
+                <button
+                  type="button"
+                  (click)="removeLogo()"
+                  class="text-rose-400 hover:text-rose-300 p-1.5 text-xs"
+                  title="Quitar logo"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            } @else {
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input
+                  pInputText
+                  type="text"
+                  [value]="logoUrlInput()"
+                  (input)="logoUrlInput.set($any($event.target).value)"
+                  placeholder="https://ejemplo.com/logo-badge.png"
+                  class="flex-1 text-xs"
+                />
+                <p-button
+                  label="Vincular URL"
+                  icon="pi pi-link"
+                  [text]="true"
+                  severity="secondary"
+                  (onClick)="setLogoUrl(logoUrlInput())"
+                  [disabled]="!logoUrlInput().trim()"
+                />
+              </div>
+
+              <div class="pt-1.5 border-t border-slate-800/80 flex items-center gap-3">
+                <label class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors">
+                  <i class="pi pi-upload"></i>
+                  <span>Subir logo/badge</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    (change)="onLogoFileSelected($event)"
+                    class="hidden"
+                    [disabled]="isUploadingLogo()"
+                  />
+                </label>
+                @if (isUploadingLogo()) {
+                  <span class="text-xs text-indigo-400 flex items-center gap-1">
+                    <i class="pi pi-spin pi-spinner"></i> Subiendo a media/offers...
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 2: VIGENCIA Y DIFUSIÓN ANTICIPADA (TEASER)              -->
+      <!-- ============================================================ -->
+      @case (2) {
+        <div class="space-y-4">
+          <!-- Rango de Vigencia Principal -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <i class="pi pi-calendar"></i>
+                Período de Precios de Oferta (Vigencia)
+              </span>
+              @if (dateRange() && dateRange()!.length > 0 && dateRange()![0]) {
+                <span class="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Programada
+                </span>
+              } @else {
+                <span class="text-[11px] font-medium text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-full">
+                  Indefinida
+                </span>
+              }
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="offer-date-range" class="text-xs font-medium text-slate-300">
+                Rango de Fechas y Horarios (Desde - Hasta)
+              </label>
+              <p-datepicker
+                id="offer-date-range"
+                [ngModel]="dateRange()"
+                (ngModelChange)="dateRange.set($event)"
+                [ngModelOptions]="{ standalone: true }"
+                selectionMode="range"
+                [showTime]="true"
+                hourFormat="24"
+                [showIcon]="true"
+                [showClear]="true"
+                dateFormat="dd/mm/yy"
+                placeholder="Selecciona período de vigencia (Desde - Hasta)"
+                styleClass="w-full text-xs"
+              />
+            </div>
+
+            <p class="text-[11px] text-slate-500">
+              Opcional. Si se deja en blanco o se limpia, las ofertas permanecerán válidas indefinidamente mientras la campaña esté Activa.
+            </p>
+          </div>
+
+          <!-- Difusión Anticipada / Teaser (promotion_starts_at) -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <i class="pi pi-megaphone text-amber-400"></i>
+                  Anuncio Anticipado de Campaña (Teaser)
+                </span>
+                <p class="text-[11px] text-slate-400">
+                  Permite mostrar el banner publicitario antes de que arranquen los precios con descuento.
+                </p>
+              </div>
+              <p-toggleswitch
+                [ngModel]="isTeaserEnabled()"
+                (ngModelChange)="isTeaserEnabled.set($event)"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </div>
+
+            @if (isTeaserEnabled()) {
+              <div class="pt-2 border-t border-slate-800/80 space-y-1.5">
+                <label for="teaser-date" class="text-xs font-medium text-slate-300">
+                  Mostrar Anuncio Desde (Fecha y Hora)
+                </label>
+                <p-datepicker
+                  id="teaser-date"
+                  [ngModel]="teaserDate()"
+                  (ngModelChange)="teaserDate.set($event)"
+                  [ngModelOptions]="{ standalone: true }"
+                  [showTime]="true"
+                  hourFormat="24"
+                  [showIcon]="true"
+                  [showClear]="true"
+                  dateFormat="dd/mm/yy"
+                  placeholder="Selecciona fecha de inicio de difusión pública"
+                  styleClass="w-full text-xs"
+                />
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 3: SELECCIÓN DE PRODUCTOS/COMBOS Y PRECIOS (MOBILE-FIRST) -->
+      <!-- ============================================================ -->
+      @case (3) {
+        <div class="space-y-4">
+          <!-- Selector y Agregador Rápido -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <i class="pi pi-plus-circle"></i>
+                Agregar Ítems a la Oferta <span class="text-rose-400">*</span>
+              </span>
+              <span class="text-xs font-medium text-slate-400">
+                {{ totalItemsCount() }} ítem(s) en oferta
+              </span>
+            </div>
+
+            <!-- Alternar Tipo: Producto vs Combo -->
+            <div class="flex items-center gap-2 p-1 rounded-xl bg-slate-900 border border-slate-800 w-fit">
+              <button
+                type="button"
+                (click)="selectedItemType.set('product'); selectedBundleIdToAdd.set(null); onItemSelectedToAdd(null)"
+                class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                [class.bg-indigo-600]="selectedItemType() === 'product'"
+                [class.text-white]="selectedItemType() === 'product'"
+                [class.text-slate-400]="selectedItemType() !== 'product'"
+              >
+                <i class="pi pi-box mr-1"></i> Productos
+              </button>
+              <button
+                type="button"
+                (click)="selectedItemType.set('bundle'); selectedProductIdToAdd.set(null); onItemSelectedToAdd(null)"
+                class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                [class.bg-indigo-600]="selectedItemType() === 'bundle'"
+                [class.text-white]="selectedItemType() === 'bundle'"
+                [class.text-slate-400]="selectedItemType() !== 'bundle'"
+              >
+                <i class="pi pi-gift mr-1"></i> Combos
+              </button>
+            </div>
+
+            <!-- Fila de selección y precio -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <!-- Selector -->
+              <div class="flex-1">
+                @if (selectedItemType() === 'product') {
+                  <p-select
+                    [options]="activeProducts()"
+                    [ngModel]="selectedProductIdToAdd()"
+                    (ngModelChange)="selectedProductIdToAdd.set($event); onItemSelectedToAdd($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="-- Seleccionar producto --"
+                    class="w-full text-xs"
+                    [filter]="true"
+                    filterPlaceholder="Buscar por nombre..."
+                  >
+                    <ng-template #item let-prod>
+                      <div class="flex items-center justify-between w-full py-1">
+                        <span class="text-xs font-medium">{{ prod.name }}</span>
+                        <span class="text-xs font-mono text-slate-400 ml-2">
+                          ${{ prod.base_price | number:'1.0-2' }}
+                        </span>
+                      </div>
+                    </ng-template>
+                  </p-select>
+                } @else {
+                  <p-select
+                    [options]="activeBundles()"
+                    [ngModel]="selectedBundleIdToAdd()"
+                    (ngModelChange)="selectedBundleIdToAdd.set($event); onItemSelectedToAdd($event)"
+                    [ngModelOptions]="{ standalone: true }"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="-- Seleccionar combo --"
+                    class="w-full text-xs"
+                    [filter]="true"
+                    filterPlaceholder="Buscar combo..."
+                  >
+                    <ng-template #item let-bnd>
+                      <div class="flex items-center justify-between w-full py-1">
+                        <span class="text-xs font-medium">{{ bnd.name }}</span>
+                        <span class="text-xs font-mono text-slate-400 ml-2">
+                          ${{ bnd.total_price | number:'1.0-2' }}
+                        </span>
+                      </div>
+                    </ng-template>
+                  </p-select>
+                }
+              </div>
+
+              <!-- Input Precio de Oferta -->
+              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl">
+                  <span class="text-xs text-slate-400">Oferta $:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    [value]="offerPriceToAdd()"
+                    (input)="offerPriceToAdd.set($any($event.target).valueAsNumber || null)"
+                    placeholder="0.00"
+                    class="w-24 bg-transparent text-right font-bold text-xs text-emerald-400 focus:outline-none"
+                  />
+                </div>
+
+                <p-button
+                  label="Agregar"
+                  icon="pi pi-plus"
+                  size="small"
+                  (onClick)="addItemToOffer()"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Acción Masiva -->
+          @if (offerItems().length > 0 && offerForm.controls.discount_percentage.value) {
+            <div class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs">
+              <span class="text-indigo-300">
+                Descuento de Campaña: <strong>{{ offerForm.controls.discount_percentage.value }}% OFF</strong>
+              </span>
+              <button
+                type="button"
+                (click)="applyCampaignDiscountToAll()"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors"
+              >
+                <i class="pi pi-sync text-[10px]"></i>
+                <span>Aplicar a todos</span>
+              </button>
+            </div>
+          }
+
+          <!-- Lista de Ítems en Tarjetas Compactas Adaptativas (Mobile-First) -->
+          @if (offerItems().length > 0) {
+            <div class="space-y-2">
+              <span class="text-xs font-medium text-slate-400 block">
+                Ítems incluidos en la oferta ({{ offerItems().length }}):
+              </span>
+
+              <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                @for (item of offerItems(); track (item.product_id ?? item.bundle_id); let idx = $index) {
+                  <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700/80 transition-colors">
+                    <!-- Datos principales -->
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      @if (item.image) {
+                        <img [src]="item.image" alt="" class="w-10 h-10 rounded-lg object-cover border border-slate-800 shrink-0" />
+                      } @else {
+                        <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 text-xs shrink-0">
+                          <i [class]="item.type === 'bundle' ? 'pi pi-gift' : 'pi pi-box'"></i>
+                        </div>
+                      }
+
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs font-semibold text-white truncate">{{ item.name }}</span>
+                          <span
+                            class="text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider"
+                            [class.bg-purple-500_10]="item.type === 'bundle'"
+                            [class.text-purple-400]="item.type === 'bundle'"
+                            [class.bg-blue-500_10]="item.type === 'product'"
+                            [class.text-blue-400]="item.type === 'product'"
+                          >
+                            {{ item.type === 'bundle' ? 'Combo' : 'Producto' }}
+                          </span>
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                          <span>Lista: <s class="font-mono text-slate-500">${{ item.regular_price | number:'1.0-2' }}</s></span>
+                          <span class="text-emerald-400 font-semibold font-mono">
+                            {{ item.calculated_discount }}% OFF
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Input de Precio y Acciones -->
+                    <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
+                      <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
+                        <span class="text-[11px] text-slate-400">Oferta:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          [value]="item.offer_price"
+                          (input)="updateItemOfferPrice(idx, $any($event.target).valueAsNumber)"
+                          class="w-20 bg-transparent text-right font-bold text-xs text-emerald-400 focus:outline-none"
+                        />
+                      </div>
+
+                      <div class="flex items-center gap-1.5">
+                        <p-toggleswitch
+                          [ngModel]="item.is_active"
+                          (ngModelChange)="toggleItemActive(idx)"
+                          [ngModelOptions]="{ standalone: true }"
+                        />
+                        <button
+                          type="button"
+                          (click)="removeItem(idx)"
+                          class="p-1.5 text-slate-400 hover:text-rose-400 transition-colors rounded-lg hover:bg-slate-800"
+                          title="Eliminar de la oferta"
+                        >
+                          <i class="pi pi-trash text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="p-6 text-center rounded-xl bg-slate-950/60 border border-slate-800 text-slate-500 text-xs">
+              <i class="pi pi-info-circle text-base text-slate-400 mb-1.5 block"></i>
+              Aún no has agregado ningún producto o combo a esta oferta. Selecciona uno arriba para empezar.
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ============================================================ -->
+      <!-- PASO 4: RESUMEN Y CONFIRMACIÓN                               -->
+      <!-- ============================================================ -->
+      @case (4) {
+        <div class="space-y-4">
+          <!-- Vista Previa de Campaña -->
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Resumen de la Campaña
+            </h4>
+
+            @if (bannerUrl()) {
+              <div class="relative rounded-xl overflow-hidden border border-slate-800 aspect-video max-h-36 bg-slate-900">
+                <img [src]="bannerUrl()" alt="Banner" class="w-full h-full object-cover" />
+                @if (logoUrl()) {
+                  <img [src]="logoUrl()" alt="Logo" class="absolute bottom-2 left-2 w-10 h-10 rounded-lg object-contain bg-slate-950/80 p-1 border border-slate-700" />
+                }
+              </div>
+            }
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+              <div class="space-y-1">
+                <p class="text-slate-400">Campaña: <strong class="text-white">{{ offerForm.controls.name.value }}</strong></p>
+                <p class="text-slate-400">Estado: <span [class.text-indigo-400]="offerForm.controls.is_active.value" class="font-semibold">{{ offerForm.controls.is_active.value ? 'Activa' : 'Pausada' }}</span></p>
+                <p class="text-slate-400">Ítems incluidos: <strong class="text-white">{{ totalItemsCount() }} producto(s)/combo(s)</strong></p>
+              </div>
+              <div class="space-y-1">
+                <p class="text-slate-400">
+                  Vigencia:
+                  @if (dateRange() && dateRange()!.length === 2 && dateRange()![0] && dateRange()![1]) {
+                    <strong class="text-indigo-300">{{ dateRange()![0] | date:'dd/MM/yy HH:mm' }} - {{ dateRange()![1] | date:'dd/MM/yy HH:mm' }}</strong>
+                  } @else {
+                    <span class="text-slate-400 italic">Indefinida</span>
+                  }
+                </p>
+                @if (isTeaserEnabled() && teaserDate()) {
+                  <p class="text-slate-400">
+                    Anuncio Teaser: <strong class="text-amber-300">Desde {{ teaserDate() | date:'dd/MM/yy HH:mm' }}</strong>
+                  </p>
+                }
+                <p class="text-slate-400">
+                  Descuento promedio: <strong class="text-emerald-400 font-mono">{{ averageDiscount() }}% OFF</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen de Métricas Económicas -->
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 grid grid-cols-3 gap-2 text-center text-xs">
+            <div>
+              <span class="text-slate-500 block text-[11px]">Valor de Lista</span>
+              <span class="font-mono text-slate-300 font-bold">${{ totalRegularPrice() | number:'1.0-2' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[11px]">Valor en Oferta</span>
+              <span class="font-mono text-emerald-400 font-bold">${{ totalOfferPrice() | number:'1.0-2' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[11px]">Ahorro Total</span>
+              <span class="font-mono text-indigo-400 font-bold">${{ totalSavings() | number:'1.0-2' }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </form>
+
+  <!-- Pie del Diálogo con Navegación -->
+  <ng-template #footer>
+    <div class="flex items-center justify-between w-full pt-3 border-t border-slate-800">
+      <p-button
+        label="Cancelar"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeWizard()"
+        [disabled]="isSaving()"
+      />
+
+      <div class="flex items-center gap-2">
+        @if (currentStep() > 1) {
+          <p-button
+            label="Anterior"
+            icon="pi pi-arrow-left"
+            [outlined]="true"
+            severity="secondary"
+            (onClick)="prevStep()"
+            [disabled]="isSaving()"
+          />
+        }
+
+        @if (currentStep() < totalSteps) {
+          <p-button
+            label="Siguiente"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            (onClick)="nextStep()"
+          />
+        } @else {
+          <p-button
+            [label]="isEditMode() ? 'Guardar Cambios' : 'Crear Oferta'"
+            [icon]="isSaving() ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+            (onClick)="saveOffer()"
+            [disabled]="isSaving() || totalItemsCount() === 0"
+          />
+        }
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+

@@ -1,4 +1,5 @@
 export * from './lib/models/catalog.models';
+export * from './lib/models/offer.models';
 export * from './lib/models/discount.models';
 export * from './lib/models/order.models';
 export * from './lib/models/analytics.models';
@@ -6,3 +7,6 @@ export * from './lib/utils/slug';
 export * from './lib/services/brands.service';
 export * from './lib/services/categories.service';
 export * from './lib/services/products.service';
+export * from './lib/services/bundles.service';
+export * from './lib/services/offers.service';
+export * from './lib/services/orders.service';

@@ -51,7 +51,8 @@ export interface Product {
   slug: string;
   description: string | null;
   base_price: number;
-  sale_price: number | null;
+  /** @deprecated En desuso en favor de la tabla 'offers' y 'offer_items' */
+  sale_price?: number | null;
   cost_price: number | null;
   stock: number;
   category_id: number | null;
@@ -60,6 +61,8 @@ export interface Product {
   is_active: boolean;
   is_highlight: boolean;
   is_on_sale: boolean;
+  applies_discount?: boolean;
+  points_required?: number | null;
 }
 
 export interface CreateProductDto {
@@ -67,6 +70,7 @@ export interface CreateProductDto {
   slug: string;
   description?: string | null;
   base_price: number;
+  /** @deprecated */
   sale_price?: number | null;
   cost_price: number;
   stock: number;
@@ -76,6 +80,8 @@ export interface CreateProductDto {
   is_active?: boolean;
   is_highlight?: boolean;
   is_on_sale?: boolean;
+  applies_discount?: boolean;
+  points_required?: number | null;
 }
 
 export interface UpdateProductDto {
@@ -83,6 +89,7 @@ export interface UpdateProductDto {
   slug?: string;
   description?: string | null;
   base_price?: number;
+  /** @deprecated */
   sale_price?: number | null;
   cost_price?: number;
   stock?: number;
@@ -92,6 +99,8 @@ export interface UpdateProductDto {
   is_active?: boolean;
   is_highlight?: boolean;
   is_on_sale?: boolean;
+  applies_discount?: boolean;
+  points_required?: number | null;
 }
 
 export interface Bundle {
@@ -113,10 +122,38 @@ export interface BundleItem {
   bundle_id: number;
   product_id: number;
   quantity: number;
+  product_quantity?: number;
   product?: Product;
 }
 
 export interface BundleWithItems extends Bundle {
   items: BundleItem[];
 }
+
+export interface CreateBundleDto {
+  name: string;
+  slug: string;
+  description?: string | null;
+  total_price: number;
+  discount_percentage?: number | null;
+  images: string[];
+  valid_from?: string | null;
+  valid_until?: string | null;
+  is_active?: boolean;
+}
+
+export interface CreateBundleItemDto {
+  product_id: number;
+  quantity: number;
+  product_quantity?: number;
+}
+
+export interface BundleItemDraft {
+  product: Product;
+  quantity: number;
+}
+
+export * from './offer.models';
+
+
 

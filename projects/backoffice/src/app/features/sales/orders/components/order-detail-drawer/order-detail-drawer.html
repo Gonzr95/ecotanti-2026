@@ -1,0 +1,378 @@
+<p-drawer
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  position="right"
+  [modal]="true"
+  styleClass="!w-full md:!w-[520px] lg:!w-[560px] !bg-slate-900 !text-slate-100 !border-l !border-slate-800 shadow-2xl"
+>
+  @if (order(); as ord) {
+    @let statusMeta = getStatusMeta(ord.status);
+    @let paymentMeta = getPaymentStatusMeta(ord.payment_status);
+
+    <div class="h-full flex flex-col justify-between -m-6 p-6">
+      <!-- Encabezado del Drawer -->
+      <div class="border-b border-slate-800 pb-5">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <span class="font-mono text-lg font-bold text-white tracking-wider">
+                {{ ord.order_number }}
+              </span>
+              <span
+                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                [class]="statusMeta.badgeClass"
+              >
+                <i [class]="statusMeta.icon + ' text-[10px]'"></i>
+                {{ statusMeta.label }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1 font-mono">
+              Recibido el {{ ord.created_at | date:'dd/MM/yyyy HH:mm' }} hs
+            </p>
+          </div>
+
+          <p-button
+            icon="pi pi-times"
+            [text]="true"
+            [rounded]="true"
+            severity="secondary"
+            size="small"
+            (onClick)="close()"
+          />
+        </div>
+
+        <!-- Controles Rápidos de Estado -->
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <!-- Estado Operativo -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              Estado Pedido
+            </label>
+            <p-select
+              [options]="statusOptions"
+              [ngModel]="ord.status"
+              (ngModelChange)="onStatusChange($event)"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full text-xs"
+              styleClass="w-full text-xs !py-1"
+            >
+              <ng-template #selectedItem let-selected>
+                @if (selected) {
+                  <span class="inline-flex items-center gap-1.5 font-bold text-xs">
+                    <i [class]="selected.icon + ' text-[10px]'"></i>
+                    {{ selected.label }}
+                  </span>
+                }
+              </ng-template>
+              <ng-template #item let-opt>
+                <div class="flex items-center gap-2 py-0.5">
+                  <i [class]="opt.icon + ' text-xs'"></i>
+                  <span class="text-xs font-medium">{{ opt.label }}</span>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+
+          <!-- Estado del Cobro -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              Estado Cobro
+            </label>
+            <p-select
+              [options]="paymentStatusOptions"
+              [ngModel]="ord.payment_status"
+              (ngModelChange)="onPaymentStatusChange($event)"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full text-xs"
+              styleClass="w-full text-xs !py-1"
+            >
+              <ng-template #selectedItem let-selected>
+                @if (selected) {
+                  <span class="inline-flex items-center gap-1 font-bold text-xs" [class]="paymentMeta.badgeClass">
+                    {{ selected.label }}
+                  </span>
+                }
+              </ng-template>
+              <ng-template #item let-opt>
+                <span class="text-xs font-medium">{{ opt.label }}</span>
+              </ng-template>
+            </p-select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido Scrolleable -->
+      <div class="flex-1 overflow-y-auto py-5 space-y-6 pr-1">
+        <!-- SECCIÓN 1: Datos del Destinatario / Cliente -->
+        <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <i class="pi pi-user text-indigo-400 text-sm"></i>
+              Cliente y Destinatario
+            </h4>
+
+            @if (ord.delivery?.recipient_phone) {
+              <a
+                [href]="getWhatsAppUrl()"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer"
+              >
+                <i class="pi pi-whatsapp text-xs"></i>
+                WhatsApp
+              </a>
+            }
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[11px]">Nombre:</span>
+              <span class="font-medium text-white">{{ ord.delivery?.recipient_name || 'No especificado' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">Teléfono:</span>
+              <span class="font-mono text-slate-200">{{ ord.delivery?.recipient_phone || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">Email:</span>
+              <span class="text-slate-200 truncate block">{{ ord.delivery?.recipient_email || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">DNI / CUIT:</span>
+              <span class="font-mono text-slate-200">{{ ord.delivery?.recipient_dni || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: Logística y Entrega -->
+        <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            <i class="pi pi-truck text-cyan-400 text-sm"></i>
+            Logística y Entrega
+          </h4>
+
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 text-[11px]">Método:</span>
+              <span class="font-semibold text-white px-2 py-0.5 rounded bg-slate-800 text-[11px]">
+                {{ getShippingLabel(ord.delivery?.shipping_method) }}
+              </span>
+            </div>
+
+            @if (ord.delivery?.shipping_method !== 'pickup') {
+              <div class="flex items-start justify-between gap-4">
+                <span class="text-slate-400 text-[11px] shrink-0">Dirección:</span>
+                <span class="font-medium text-white text-right">
+                  {{ ord.delivery?.address_line }}, {{ ord.delivery?.city }}
+                  @if (ord.delivery?.province) {
+                    ({{ ord.delivery?.province }})
+                  }
+                  @if (ord.delivery?.postal_code) {
+                    - CP {{ ord.delivery?.postal_code }}
+                  }
+                </span>
+              </div>
+            }
+
+            <!-- Campo de Tracking / Seguimiento -->
+            <div class="pt-2 border-t border-slate-800/80 space-y-1.5">
+              <label class="text-[11px] font-semibold text-slate-400 block">
+                Número de Seguimiento (Tracking)
+              </label>
+              <div class="flex items-center gap-2">
+                <input
+                  pInputText
+                  type="text"
+                  [value]="trackingInput()"
+                  (input)="trackingInput.set($any($event.target).value)"
+                  placeholder="Ej: AR-098234-CORREO"
+                  class="flex-1 text-xs font-mono !py-1.5"
+                />
+                <p-button
+                  icon="pi pi-check"
+                  label="Guardar"
+                  size="small"
+                  severity="secondary"
+                  [loading]="isUpdating()"
+                  (onClick)="saveTracking()"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: Composición del Pedido (Ítems) -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            <i class="pi pi-box text-amber-400 text-sm"></i>
+            Ítems del Pedido ({{ ord.items.length }})
+          </h4>
+
+          <div class="divide-y divide-slate-800 bg-slate-950/60 border border-slate-800/80 rounded-2xl overflow-hidden">
+            @for (item of ord.items; track item.id) {
+              <div class="p-3 flex items-center justify-between gap-3 text-xs">
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="font-semibold text-white">{{ item.item_name }}</span>
+                    <span
+                      class="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded"
+                      [class.bg-purple-500/10]="item.item_type === 'bundle'"
+                      [class.text-purple-400]="item.item_type === 'bundle'"
+                      [class.bg-blue-500/10]="item.item_type === 'product'"
+                      [class.text-blue-400]="item.item_type === 'product'"
+                    >
+                      {{ item.item_type === 'bundle' ? 'Combo' : 'Producto' }}
+                    </span>
+                  </div>
+                  <span class="text-slate-400 text-[11px]">
+                    {{ item.quantity }} x ${{ item.unit_price | number:'1.0-2' }}
+                  </span>
+                </div>
+
+                <span class="font-mono font-bold text-white shrink-0">
+                  ${{ item.subtotal | number:'1.0-2' }}
+                </span>
+              </div>
+            } @empty {
+              <div class="p-4 text-center text-xs text-slate-400">
+                No hay productos registrados en esta orden.
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- SECCIÓN 4: Desglose Contable y Financiero -->
+        <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2 text-xs">
+          <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-3">
+            <i class="pi pi-wallet text-emerald-400 text-sm"></i>
+            Resumen Financiero
+          </h4>
+
+          <div class="flex justify-between text-slate-400">
+            <span>Subtotal de ítems:</span>
+            <span class="font-mono text-slate-200">${{ ord.subtotal_amount | number:'1.0-2' }}</span>
+          </div>
+
+          @if (ord.discount_amount > 0) {
+            <div class="flex justify-between text-rose-400">
+              <span>Descuento aplicado:</span>
+              <span class="font-mono">-${{ ord.discount_amount | number:'1.0-2' }}</span>
+            </div>
+          }
+
+          <div class="flex justify-between text-slate-400">
+            <span>Costo de envío:</span>
+            <span class="font-mono text-slate-200">
+              {{ ord.shipping_cost > 0 ? ('$' + (ord.shipping_cost | number:'1.0-2')) : 'Gratis / Retiro' }}
+            </span>
+          </div>
+
+          @if (ord.credit_used > 0) {
+            <div class="flex justify-between text-indigo-400">
+              <span>Créditos / Saldo a favor:</span>
+              <span class="font-mono">-${{ ord.credit_used | number:'1.0-2' }}</span>
+            </div>
+          }
+
+          <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-sm font-bold">
+            <span class="text-white">Total:</span>
+            <span class="text-emerald-400 font-mono text-base">
+              ${{ ord.total_amount | number:'1.0-2' }}
+            </span>
+          </div>
+
+          <div class="flex justify-between items-center pt-2 text-[11px] text-slate-400">
+            <span>Medio de pago:</span>
+            <span class="uppercase font-semibold text-slate-300">
+              {{ ord.payment_method }}
+            </span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 5: Notas y Observaciones -->
+        @if (ord.notes || ord.delivery?.notes) {
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-1.5 text-xs">
+            <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <i class="pi pi-comment text-amber-400 text-sm"></i>
+              Observaciones del Cliente
+            </h4>
+            <p class="text-slate-300 italic whitespace-pre-wrap">
+              {{ ord.notes || ord.delivery?.notes }}
+            </p>
+          </div>
+        }
+      </div>
+
+      <!-- Footer del Drawer -->
+      <div class="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+        @if (ord.status !== 'cancelled') {
+          <p-button
+            label="Anular Pedido"
+            icon="pi pi-trash"
+            severity="danger"
+            [text]="true"
+            size="small"
+            (onClick)="onStatusChange('cancelled')"
+          />
+        } @else {
+          <span class="text-xs text-rose-400 font-semibold flex items-center gap-1.5">
+            <i class="pi pi-times-circle"></i>
+            Orden Anulada
+          </span>
+        }
+
+        <p-button
+          label="Cerrar"
+          icon="pi pi-check"
+          size="small"
+          severity="secondary"
+          (onClick)="close()"
+        />
+      </div>
+    </div>
+  }
+</p-drawer>
+
+<!-- Diálogo de Confirmación de Cancelación -->
+<p-dialog
+  [visible]="isCancelDialogOpen()"
+  (visibleChange)="isCancelDialogOpen.set($event)"
+  header="Confirmar Cancelación de Pedido"
+  [modal]="true"
+  [closable]="true"
+  styleClass="!w-[90vw] md:!w-[420px] !bg-slate-900 !text-slate-100 !border !border-slate-800 rounded-2xl"
+>
+  <div class="space-y-3 pt-2 text-xs">
+    <div class="flex items-center gap-3 text-rose-400">
+      <i class="pi pi-exclamation-triangle text-2xl"></i>
+      <span class="font-bold text-sm text-slate-100">
+        ¿Está seguro de que desea anular este pedido?
+      </span>
+    </div>
+    <p class="text-slate-400 leading-relaxed">
+      Esta acción marcará la orden como <strong>Cancelada</strong>. Asegúrese de realizar el reintegro de dinero al cliente en caso de que ya haya abonado.
+    </p>
+  </div>
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-2 pt-3">
+      <p-button
+        label="Volver"
+        size="small"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeCancelDialog()"
+      />
+      <p-button
+        label="Sí, Cancelar Pedido"
+        icon="pi pi-trash"
+        size="small"
+        severity="danger"
+        (onClick)="confirmCancelOrder()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+

@@ -36,25 +36,6 @@
         [showValue]="false"
         styleClass="h-1.5 rounded-full bg-slate-800"
       />
-
-      <!-- Indicadores de Pasos Clickeables -->
-      <div class="flex items-center justify-between gap-1 pt-1">
-        @for (stepNum of [1, 2, 3, 4, 5]; track stepNum) {
-          <button
-            type="button"
-            (click)="goToStep(stepNum)"
-            class="flex-1 py-1 text-center rounded-md text-xs font-medium transition-all"
-            [class.bg-indigo-600]="currentStep() === stepNum"
-            [class.text-white]="currentStep() === stepNum"
-            [class.bg-indigo-950_40]="currentStep() > stepNum"
-            [class.text-indigo-400]="currentStep() > stepNum"
-            [class.text-slate-500]="currentStep() < stepNum"
-            [class.hover_bg-slate-800]="currentStep() !== stepNum"
-          >
-            Paso {{ stepNum }}
-          </button>
-        }
-      </div>
     </div>
   </ng-template>
 
@@ -162,29 +143,6 @@
           </div>
         </div>
 
-        <!-- Precio de Oferta -->
-        <div class="space-y-1.5">
-          <label for="sale_price" class="block text-sm font-medium text-slate-300">
-            Precio de Oferta (Opcional)
-          </label>
-          <p-inputnumber
-            id="sale_price"
-            formControlName="sale_price"
-            mode="currency"
-            currency="ARS"
-            locale="es-AR"
-            placeholder="Dejar vacío si no está en descuento"
-            styleClass="w-full"
-          />
-          @if (
-            productForm.controls.sale_price.value &&
-            productForm.controls.base_price.value &&
-            productForm.controls.sale_price.value >= productForm.controls.base_price.value
-          ) {
-            <p class="text-rose-400 text-xs">El precio de oferta debe ser menor al precio base.</p>
-          }
-        </div>
-
         <!-- Tarjeta de Ayuda Visual: Rentabilidad en Tiempo Real -->
         @if (calculatedGrossProfit() !== null) {
           <div class="p-4 rounded-xl bg-slate-950/70 border border-indigo-500/30 space-y-2.5">
@@ -206,19 +164,17 @@
 
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span class="text-xs text-slate-400 block">Ganancia Bruta Regular:</span>
+                <span class="text-xs text-slate-400 block">Ganancia Bruta:</span>
                 <span class="font-bold text-white text-base">
                   $ {{ calculatedGrossProfit() | number:'1.2-2' }}
                 </span>
               </div>
-              @if (calculatedSaleProfit() !== null) {
-                <div>
-                  <span class="text-xs text-slate-400 block">Ganancia en Oferta:</span>
-                  <span class="font-bold text-amber-400 text-base">
-                    $ {{ calculatedSaleProfit() | number:'1.2-2' }} ({{ calculatedSaleMarginPercent() | number:'1.1-1' }}%)
-                  </span>
-                </div>
-              }
+              <div>
+                <span class="text-xs text-slate-400 block">Margen sobre Venta:</span>
+                <span class="font-bold text-emerald-400 text-base">
+                  {{ calculatedMarginPercent() | number:'1.1-1' }}%
+                </span>
+              </div>
             </div>
           </div>
         }
@@ -313,12 +269,30 @@
     <!-- PASO 4: IMÁGENES DEL PRODUCTO -->
     @if (currentStep() === 4) {
       <div class="space-y-4">
-        <!-- Métodos de Carga (URL y Archivo) -->
+        <!-- Métodos de Carga (URL, Cargar foto, Tomar foto) -->
         <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-          <span class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            Agregar Imágenes
-          </span>
+          <div class="flex items-center justify-between">
+            <span class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              Fotos del Producto
+            </span>
+            <span
+              class="text-xs font-mono font-semibold px-2 py-0.5 rounded-full"
+              [class.bg-emerald-500_20]="images().length >= 1 && images().length < MAX_IMAGES"
+              [class.text-emerald-400]="images().length >= 1 && images().length < MAX_IMAGES"
+              [class.bg-indigo-500_20]="images().length === MAX_IMAGES"
+              [class.text-indigo-300]="images().length === MAX_IMAGES"
+              [class.bg-slate-800]="images().length === 0"
+              [class.text-slate-400]="images().length === 0"
+            >
+              {{ images().length }} / {{ MAX_IMAGES }} fotos
+            </span>
+          </div>
 
+          <p class="text-xs text-slate-400">
+            Puedes cargar hasta 3 fotos (con 1 es suficiente para la portada principal).
+          </p>
+
+          <!-- Input para URL Externa -->
           <div class="flex flex-col sm:flex-row gap-2">
             <input
               pInputText
@@ -327,6 +301,7 @@
               (input)="imageUrlInput.set($any($event.target).value)"
               placeholder="https://ejemplo.com/foto-producto.jpg"
               class="flex-1 text-sm"
+              [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"
             />
             <p-button
               label="Agregar URL"
@@ -334,29 +309,57 @@
               [text]="true"
               severity="secondary"
               (onClick)="addImageUrl()"
-              [disabled]="!imageUrlInput().trim()"
+              [disabled]="!imageUrlInput().trim() || images().length >= MAX_IMAGES || isUploadingImage()"
             />
           </div>
 
-          <!-- Selector de Archivo / Cámara en Dispositivos Móviles -->
-          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+          <!-- Dos botones separados: Cargar foto y Tomar foto -->
+          <div class="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-3">
+            <!-- Botón 1: Cargar foto (Galería de celular / Explorador de archivos) -->
             <label
               class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20"
+              [class.opacity-50]="images().length >= MAX_IMAGES || isUploadingImage()"
+              [class.pointer-events-none]="images().length >= MAX_IMAGES || isUploadingImage()"
             >
-              <i class="pi pi-camera"></i>
-              <span>Subir Foto / Tomar con Cámara</span>
+              <i class="pi pi-upload"></i>
+              <span>Cargar foto</span>
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 (change)="onFileSelected($event)"
                 class="hidden"
-                [disabled]="isUploadingImage()"
+                [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"
+              />
+            </label>
+
+            <!-- Botón 2: Tomar foto (Cámara directa móvil) -->
+            <label
+              class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20"
+              [class.opacity-50]="images().length >= MAX_IMAGES || isUploadingImage()"
+              [class.pointer-events-none]="images().length >= MAX_IMAGES || isUploadingImage()"
+            >
+              <i class="pi pi-camera"></i>
+              <span>Tomar foto</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                (change)="onFileSelected($event)"
+                class="hidden"
+                [disabled]="images().length >= MAX_IMAGES || isUploadingImage()"
               />
             </label>
 
             @if (isUploadingImage()) {
-              <span class="text-xs text-indigo-400 flex items-center gap-1.5 font-medium">
+              <span class="text-xs text-indigo-400 flex items-center gap-1.5 font-medium ml-auto">
                 <i class="pi pi-spin pi-spinner"></i> Subiendo imagen...
+              </span>
+            }
+
+            @if (images().length >= MAX_IMAGES) {
+              <span class="text-xs text-amber-400 flex items-center gap-1 font-medium ml-auto">
+                <i class="pi pi-info-circle"></i> Máximo alcanzado (3 fotos)
               </span>
             }
           </div>
@@ -366,7 +369,7 @@
         @if (images().length > 0) {
           <div class="space-y-2">
             <span class="text-xs font-medium text-slate-400 block">
-              Imágenes cargadas ({{ images().length }}): La primera es la portada principal.
+              Fotos cargadas ({{ images().length }} de {{ MAX_IMAGES }}): La primera es la portada principal.
             </span>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
               @for (imgUrl of images(); track imgUrl; let idx = $index) {
@@ -405,9 +408,10 @@
             </div>
           </div>
         } @else {
-          <div class="p-6 text-center border border-dashed border-slate-800 rounded-xl space-y-1 text-slate-500">
-            <i class="pi pi-image text-2xl"></i>
-            <p class="text-xs">No hay imágenes cargadas todavía (este paso es opcional).</p>
+          <div class="p-6 text-center border border-dashed border-rose-500/30 bg-rose-500/5 rounded-xl space-y-1 text-slate-400">
+            <i class="pi pi-image text-2xl text-slate-500"></i>
+            <p class="text-xs font-medium text-slate-300">Aún no has agregado fotos.</p>
+            <p class="text-[11px] text-slate-500">Se requiere al menos 1 foto para la portada del producto (máximo 3 fotos).</p>
           </div>
         }
       </div>

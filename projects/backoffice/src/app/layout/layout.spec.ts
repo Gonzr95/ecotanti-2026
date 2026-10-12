@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideOptimus } from '@openng/optimus-ui/config';
 import Aura from '@openng/optimus-ui-themes/aura';
+import { MessageService } from '@openng/optimus-ui/api';
 import { AuthService } from '@ecotanti/shared-auth';
 import { AdminLayoutComponent } from './layout';
 
@@ -22,6 +23,7 @@ describe('AdminLayoutComponent', () => {
       providers: [
         provideRouter([]),
         provideOptimus({ theme: { preset: Aura } }),
+        MessageService,
         { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();

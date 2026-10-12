@@ -71,6 +71,39 @@
           }
         </div>
 
+        <!-- VENTAS (Acordeón colapsable) -->
+        <div>
+          <button
+            type="button"
+            (click)="toggleSection('ventas')"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-shopping-bag text-base text-emerald-400"></i>
+              <span>Ventas</span>
+            </div>
+            <i
+              class="pi pi-chevron-down text-xs transition-transform duration-200 text-slate-400"
+              [class.rotate-180]="openSections().ventas"
+            ></i>
+          </button>
+          @if (openSections().ventas) {
+            <div class="pl-7 pr-2 py-1 space-y-1 border-l border-slate-800 ml-5 my-1">
+              @if (hasPermission('orders.view')) {
+                <a
+                  routerLink="/pedidos"
+                  routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                  (click)="close()"
+                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+                >
+                  <i class="pi pi-receipt text-xs"></i>
+                  <span>Pedidos</span>
+                </a>
+              }
+            </div>
+          }
+        </div>
+
         <!-- CATÁLOGO (Acordeón colapsable) -->
         <div>
           <button
@@ -111,15 +144,29 @@
                   <span>Productos</span>
                 </a>
               }
-              <a
-                routerLink="/ofertas"
-                routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
-                (click)="close()"
-                class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
-              >
-                <i class="pi pi-percentage text-xs"></i>
-                <span>Ofertas</span>
-              </a>
+              @if (hasPermission('catalog.bundles.view')) {
+                <a
+                  routerLink="/combos"
+                  routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                  (click)="close()"
+                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+                >
+                  <i class="pi pi-gift text-xs"></i>
+                  <span>Combos</span>
+                </a>
+              }
+
+              @if (hasPermission('catalog.offers.view')) {
+                <a
+                  routerLink="/ofertas"
+                  routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
+                  (click)="close()"
+                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors text-xs"
+                >
+                  <i class="pi pi-percentage text-xs"></i>
+                  <span>Ofertas</span>
+                </a>
+              }
               <a
                 routerLink="/promociones"
                 routerLinkActive="bg-indigo-600/20 text-indigo-400 font-semibold"
