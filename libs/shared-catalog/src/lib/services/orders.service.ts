@@ -1,6 +1,7 @@
 import { inject, Service } from '@angular/core';
 import { SupabaseService } from '@ecotanti/shared-auth';
 import {
+  CreateOrderInput,
   Order,
   OrderDelivery,
   OrderStatus,
@@ -145,6 +146,95 @@ export class OrdersService {
     return () => {
       this.supabase.removeChannel(channel);
     };
+  }
+
+  /**
+   * Crea una nueva orden en el sistema con sus ítems y datos de entrega asociados.
+   * Genera automáticamente un número de pedido único y desata el trigger de stock.
+   */
+  async createOrder(input: CreateOrderInput): Promise<OrderWithDetails> {
+    const year = new Date().getFullYear();
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const orderNumber = `ORD-${year}-${Date.now().toString().slice(-4)}${randomSuffix}`;
+
+    // 1. Insertar orden principal
+    const { data: orderData, error: orderError } = await this.supabase
+      .from('orders')
+      .insert({
+        order_number: orderNumber,
+        user_id: null,
+        status: input.status || 'delivered',
+        subtotal_amount: input.subtotal_amount,
+        discount_amount: input.discount_amount || 0,
+        shipping_cost: input.shipping_cost || 0,
+        total_amount: input.total_amount,
+        payment_method: input.payment_method || 'cash',
+        payment_status: input.payment_status || 'completed',
+        notes: input.notes || null,
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    const orderId = orderData.id;
+
+    // 2. Insertar ítems de la orden (detalles)
+    const itemsToInsert = input.items.map((item) => ({
+      order_id: orderId,
+      product_id: item.product_id || null,
+      bundle_id: item.bundle_id || null,
+      item_type: item.item_type,
+      item_name: item.item_name,
+      unit_price: item.unit_price,
+      unit_cost: item.unit_cost || 0,
+      quantity: item.quantity,
+      subtotal: item.subtotal,
+    }));
+
+    const { data: detailsData, error: detailsError } = await this.supabase
+      .from('order_details')
+      .insert(itemsToInsert)
+      .select();
+
+    if (detailsError) {
+      throw detailsError;
+    }
+
+    // 3. Insertar datos de entrega / destinatario
+    const deliveryToInsert = {
+      order_id: orderId,
+      recipient_name: input.delivery.recipient_name,
+      recipient_email: input.delivery.recipient_email || 'mostrador@ecotanti.com',
+      recipient_phone: input.delivery.recipient_phone || '-',
+      recipient_dni: input.delivery.recipient_dni || null,
+      shipping_method: input.delivery.shipping_method || 'pickup',
+      shipping_cost: input.delivery.shipping_cost || 0,
+      address_line: input.delivery.address_line || null,
+      city: input.delivery.city || null,
+      province: input.delivery.province || null,
+      postal_code: input.delivery.postal_code || null,
+      notes: input.delivery.notes || null,
+      tracking_number: null,
+    };
+
+    const { data: deliveryData, error: deliveryError } = await this.supabase
+      .from('order_deliveries')
+      .insert(deliveryToInsert)
+      .select()
+      .single();
+
+    if (deliveryError) {
+      throw deliveryError;
+    }
+
+    return {
+      ...orderData,
+      items: detailsData || [],
+      delivery: deliveryData,
+    } as OrderWithDetails;
   }
 }
 

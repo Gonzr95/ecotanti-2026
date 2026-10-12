@@ -79,3 +79,41 @@ export interface OrderWithDetails extends Order {
   delivery?: OrderDelivery;
 }
 
+export interface CreateOrderItemInput {
+  item_type: 'product' | 'bundle';
+  product_id?: number | null;
+  bundle_id?: number | null;
+  item_name: string;
+  unit_price: number;
+  unit_cost?: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface CreateOrderDeliveryInput {
+  recipient_name: string;
+  recipient_email?: string | null;
+  recipient_phone?: string | null;
+  recipient_dni?: string | null;
+  shipping_method: ShippingMethod;
+  shipping_cost: number;
+  address_line?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postal_code?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateOrderInput {
+  status?: OrderStatus;
+  payment_status?: PaymentStatus;
+  payment_method: string;
+  subtotal_amount: number;
+  discount_amount?: number;
+  shipping_cost?: number;
+  total_amount: number;
+  notes?: string | null;
+  items: CreateOrderItemInput[];
+  delivery: CreateOrderDeliveryInput;
+}
+
