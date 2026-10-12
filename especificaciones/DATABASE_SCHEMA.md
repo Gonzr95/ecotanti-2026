@@ -114,7 +114,6 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `slug` | `text` | Unique |
 | `description` | `text` | Nullable |
 | `base_price` | `numeric(12,2)` | Not Null |
-| `sale_price` | `numeric(12,2)` | Nullable |
 | `cost_price` | `numeric(12,2)` | Nullable |
 | `stock` | `int8` | Default 0 |
 | `category_id` | `int8` | FK categories(id) Nullable |
@@ -123,6 +122,8 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `is_active` | `boolean` | Default true |
 | `is_highlight` | `boolean` | Default false |
 | `is_on_sale` | `boolean` | Default false |
+| `applies_discount` | `boolean` | Default true |
+| `points_required` | `int8` | Nullable |
 
 ## Table `bundles`
 
@@ -162,7 +163,8 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `id` | `int8` | Primary Identity |
 | `created_at` | `timestamptz` | Default now() |
 | `updated_at` | `timestamptz` | Nullable |
-| `code` | `text` | Unique |
+| `code` | `text` | Unique Nullable |
+| `name` | `text` | Not Null |
 | `description` | `text` | Nullable |
 | `discount_percentage` | `numeric(5,2)` | Nullable |
 | `fixed_discount` | `numeric(12,2)` | Nullable |
@@ -172,6 +174,39 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `uses_count` | `int8` | Default 0 |
 | `valid_from` | `timestamptz` | Nullable |
 | `valid_until` | `timestamptz` | Nullable |
+| `is_active` | `boolean` | Default true |
+
+## Table `offers`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int8` | Primary Identity |
+| `created_at` | `timestamptz` | Default now() |
+| `updated_at` | `timestamptz` | Nullable |
+| `name` | `text` | Not Null |
+| `slug` | `text` | Unique |
+| `description` | `text` | Nullable |
+| `image_url` | `text` | Nullable |
+| `logo_url` | `text` | Nullable |
+| `promotion_starts_at` | `timestamptz` | Nullable |
+| `valid_from` | `timestamptz` | Nullable |
+| `valid_until` | `timestamptz` | Nullable |
+| `discount_percentage` | `numeric(5,2)` | Nullable |
+| `is_active` | `boolean` | Default true |
+
+## Table `offer_items`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int8` | Primary Identity |
+| `offer_id` | `int8` | FK offers(id) |
+| `product_id` | `int8` | FK products(id) Nullable |
+| `bundle_id` | `int8` | FK bundles(id) Nullable |
+| `price` | `numeric(12,2)` | Nullable |
 | `is_active` | `boolean` | Default true |
 
 ## Table `orders`
@@ -188,9 +223,12 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `status` | `text` | Default 'pending' |
 | `subtotal_amount` | `numeric(12,2)` | Not Null |
 | `discount_id` | `int8` | FK discounts(id) Nullable |
+| `discount_applied` | `boolean` | Default false |
 | `discount_amount` | `numeric(12,2)` | Default 0 |
 | `shipping_cost` | `numeric(12,2)` | Default 0 |
 | `total_amount` | `numeric(12,2)` | Not Null |
+| `credit_used` | `numeric(12,2)` | Default 0 |
+| `final_paid_amount` | `numeric(12,2)` | Nullable |
 | `payment_method` | `text` | Default 'bank_transfer' |
 | `payment_status` | `text` | Default 'pending' |
 | `notes` | `text` | Nullable |
@@ -205,12 +243,15 @@ stores suspicious attempts of loggin in with false credentials in admin page
 | `order_id` | `int8` | FK orders(id) |
 | `product_id` | `int8` | FK products(id) Nullable |
 | `bundle_id` | `int8` | FK bundles(id) Nullable |
+| `offer_item_id` | `int8` | FK offer_items(id) Nullable |
 | `item_type` | `text` | Not Null |
 | `item_name` | `text` | Not Null |
+| `regular_price` | `numeric(12,2)` | Not Null |
 | `unit_price` | `numeric(12,2)` | Not Null |
-| `unit_cost` | `numeric(12,2)` | Default 0 |
+| `cost_price` | `numeric(12,2)` | Default 0 |
 | `quantity` | `int2` | Default 1 |
 | `subtotal` | `numeric(12,2)` | Not Null |
+| `created_at` | `timestamptz` | Default now() |
 
 ## Table `order_deliveries`
 
@@ -241,3 +282,4 @@ Bucket para almacenamiento de archivos multimedia.
 ### Carpetas:
 * `users/`: Avatares y fotos de perfil de usuarios (enlace con `profiles.avatar_url`).
 * `products/`: Fotografías e imágenes del catálogo de productos y combos.
+* `offers/`: Banners e imágenes promocionales de ofertas y campañas.

@@ -1,0 +1,41 @@
+<div class="space-y-6">
+  <!-- Encabezado de la página -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+        <i class="pi pi-gift text-indigo-400 text-xl"></i>
+        <span>Combos y Promociones</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">
+        Administración general de combos, composición de productos y precios con descuento especial
+      </p>
+    </div>
+    <div>
+      <p-button
+        label="Nuevo Combo"
+        icon="pi pi-plus"
+        (onClick)="openNewBundleWizard()"
+      />
+    </div>
+  </div>
+
+  <!-- Estado Inicial -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+      <i class="pi pi-gift text-2xl"></i>
+    </div>
+    <div class="max-w-md mx-auto space-y-1">
+      <h3 class="text-lg font-semibold text-white">Catálogo de Combos</h3>
+      <p class="text-sm text-slate-400">
+        Haz clic en <span class="text-indigo-400 font-medium">"Nuevo Combo"</span> para definir una nueva oferta agrupada de productos mediante el asistente por etapas.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Dedicado con Asistente / Stepper de Combos -->
+<app-bundle-create-wizard
+  [(visible)]="isWizardVisible"
+  (bundleCreated)="onBundleCreated($event)"
+/>
+

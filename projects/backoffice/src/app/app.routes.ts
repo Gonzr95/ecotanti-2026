@@ -40,6 +40,14 @@ export const routes: Routes = [
           import('./features/catalog/products/products').then((m) => m.ProductsComponent),
       },
       {
+        path: 'combos',
+        title: 'Combos y Promociones - EcoTanti Backoffice',
+        canActivate: [permissionGuard],
+        data: { permission: 'catalog.bundles.view' },
+        loadComponent: () =>
+          import('./features/catalog/bundles/bundles').then((m) => m.BundlesComponent),
+      },
+      {
         path: '**',
         redirectTo: 'home',
       },
