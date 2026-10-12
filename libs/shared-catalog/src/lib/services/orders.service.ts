@@ -188,8 +188,9 @@ export class OrdersService {
       bundle_id: item.bundle_id || null,
       item_type: item.item_type,
       item_name: item.item_name,
+      regular_price: item.regular_price ?? item.unit_price,
       unit_price: item.unit_price,
-      unit_cost: item.unit_cost || 0,
+      unit_cost: item.unit_cost ?? item.cost_price ?? 0,
       quantity: item.quantity,
       subtotal: item.subtotal,
     }));

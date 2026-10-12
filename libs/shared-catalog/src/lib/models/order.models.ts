@@ -84,7 +84,9 @@ export interface CreateOrderItemInput {
   product_id?: number | null;
   bundle_id?: number | null;
   item_name: string;
+  regular_price?: number;
   unit_price: number;
+  cost_price?: number;
   unit_cost?: number;
   quantity: number;
   subtotal: number;
