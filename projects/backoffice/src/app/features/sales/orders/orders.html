@@ -21,6 +21,13 @@
 
     <div class="flex items-center gap-2">
       <p-button
+        icon="pi pi-plus"
+        label="Nueva Venta Presencial"
+        size="small"
+        severity="primary"
+        (onClick)="openCreateModal()"
+      />
+      <p-button
         icon="pi pi-refresh"
         label="Actualizar"
         size="small"
@@ -106,6 +113,12 @@
     (statusChange)="handleStatusChange($event)"
     (paymentStatusChange)="handlePaymentStatusChange($event)"
     (trackingUpdate)="handleTrackingUpdate($event)"
+  />
+
+  <!-- Modal de Nueva Venta Presencial (Mostrador) -->
+  <app-order-create-modal
+    [(visible)]="isCreateModalOpen"
+    (orderCreated)="onOrderCreated($event)"
   />
 </div>
 

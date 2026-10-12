@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideOptimus } from '@openng/optimus-ui/config';
 import Aura from '@openng/optimus-ui-themes/aura';
 import { MessageService } from '@openng/optimus-ui/api';
-import { OrdersService, OrderWithDetails } from '@ecotanti/shared-catalog';
+import { BundlesService, OrdersService, OrderWithDetails, ProductsService } from '@ecotanti/shared-catalog';
 import { NotificationsService } from '../../../core/services/notifications.service';
 import { OrdersComponent } from './orders';
 
@@ -133,6 +133,8 @@ describe('OrdersComponent', () => {
         MessageService,
         { provide: OrdersService, useValue: ordersServiceMock },
         { provide: NotificationsService, useValue: notificationsServiceMock },
+        { provide: ProductsService, useValue: { getProducts: vi.fn().mockResolvedValue([]) } },
+        { provide: BundlesService, useValue: { getBundles: vi.fn().mockResolvedValue([]) } },
       ],
     }).compileComponents();
 
@@ -223,5 +225,36 @@ describe('OrdersComponent', () => {
       });
       expect(ordersServiceMock.getOrders).toHaveBeenCalledTimes(2);
     }
+  });
+
+  it('should open create modal on openCreateModal() and prepend created order on onOrderCreated()', () => {
+    expect(component.isCreateModalOpen()).toBe(false);
+
+    component.openCreateModal();
+    expect(component.isCreateModalOpen()).toBe(true);
+
+    const newCreatedOrder: OrderWithDetails = {
+      id: 99,
+      order_number: 'ORD-2026-0099',
+      user_id: null,
+      status: 'delivered',
+      payment_status: 'completed',
+      payment_method: 'cash',
+      subtotal_amount: 5000,
+      discount_id: null,
+      discount_amount: 0,
+      credit_used: 0,
+      shipping_cost: 0,
+      total_amount: 5000,
+      final_paid_amount: 5000,
+      notes: null,
+      created_at: '2026-10-12T16:00:00Z',
+      updated_at: '2026-10-12T16:00:00Z',
+      items: [],
+    };
+
+    component.onOrderCreated(newCreatedOrder);
+    expect(component.orders().length).toBe(3);
+    expect(component.orders()[0].id).toBe(99);
   });
 });

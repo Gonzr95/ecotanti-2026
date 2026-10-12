@@ -19,6 +19,7 @@ import {
 import { NotificationsService } from '../../../core/services/notifications.service';
 import { OrdersTableComponent } from './components/orders-table/orders-table';
 import { OrderDetailDrawerComponent } from './components/order-detail-drawer/order-detail-drawer';
+import { OrderCreateModalComponent } from './components/order-create-modal/order-create-modal';
 
 @Component({
   selector: 'app-orders',
@@ -28,6 +29,7 @@ import { OrderDetailDrawerComponent } from './components/order-detail-drawer/ord
     Toast,
     OrdersTableComponent,
     OrderDetailDrawerComponent,
+    OrderCreateModalComponent,
   ],
   templateUrl: './orders.html',
 })
@@ -42,6 +44,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   readonly selectedOrder = signal<OrderWithDetails | null>(null);
   readonly isDrawerOpen = signal<boolean>(false);
+  readonly isCreateModalOpen = signal<boolean>(false);
 
   private realtimeSubscription: any = null;
 
@@ -112,6 +115,14 @@ export class OrdersComponent implements OnInit, OnDestroy {
   onOrderSelected(order: OrderWithDetails): void {
     this.selectedOrder.set(order);
     this.isDrawerOpen.set(true);
+  }
+
+  openCreateModal(): void {
+    this.isCreateModalOpen.set(true);
+  }
+
+  onOrderCreated(newOrder: OrderWithDetails): void {
+    this.orders.update((list) => [newOrder, ...list.filter((o) => o.id !== newOrder.id)]);
   }
 
   async handleStatusChange({ order, newStatus }: { order: OrderWithDetails; newStatus: OrderStatus }): Promise<void> {
