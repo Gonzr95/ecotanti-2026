@@ -64,6 +64,36 @@
         }
       </div>
 
+      <!-- Banner de Permisos de Notificación en Dispositivo -->
+      @if (notificationsService.permissionStatus() !== 'granted') {
+        <div class="p-2.5 bg-indigo-950/40 border-b border-indigo-900/40 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="pi pi-bell text-indigo-400 text-xs shrink-0"></i>
+            <span class="text-[11px] text-slate-300 truncate">Alertas en este dispositivo</span>
+          </div>
+          <button
+            type="button"
+            (click)="notificationsService.requestPermission()"
+            class="px-2.5 py-1 text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shrink-0 cursor-pointer shadow-sm"
+          >
+            Activar
+          </button>
+        </div>
+      } @else {
+        <div class="px-3 py-1.5 bg-slate-950/40 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+          <span class="flex items-center gap-1.5 text-emerald-400">
+            <i class="pi pi-check text-[10px]"></i> Alertas en barra activas
+          </span>
+          <button
+            type="button"
+            (click)="notificationsService.sendTestNotification()"
+            class="text-indigo-400 hover:text-indigo-300 text-[10px] underline cursor-pointer"
+          >
+            Probar alerta
+          </button>
+        </div>
+      }
+
       <!-- Lista de Notificaciones -->
       <div class="max-h-80 overflow-y-auto divide-y divide-slate-800/60">
         @if (notificationsService.notifications().length === 0) {
